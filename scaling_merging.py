@@ -8,6 +8,7 @@ import subprocess
 import sys
 import numpy as np 
 import glob
+from change_line import change_phil
 
 
 """
@@ -15,16 +16,20 @@ Sacling and merging settings
 """
 
 class scaling_job:
-    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str):
+    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.queue_option = queue_option
         self.phil_file = phil_file
+        self.tag = tag
+        self.resolution = str(resolution)
+        self.ref_pdb = ref_pdb
     
-    def create_job(self, data_folder:str, process_name:str):
-        processing_folder = self.processing_dir + "/" + process_name
+    def create_job(self, data_folder:str, process_name:str, run_name:str):
+        processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
         submit_script = processing_folder + "/" + str("run_scaling_" + process_name + ".sh")
         phil = processing_folder + "/" + "scaling.phil"
+        prefix = str(self.tag + "_scaling_" + self.resolution + "A")
         print(colors.GREEN + colors.BOLD + "Submit scaling jobs for: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
             print(colors.BLUE + colors.BOLD + "scaling job of " + process_name + " has been submitted, please check the foled: " + processing_folder + colors.ENDC)
@@ -36,6 +41,7 @@ class scaling_job:
             with open(phil, "a+") as p:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
+            change_phil(phil, self.resolution, prefix, self.ref_pdb)
             with open(submit_script, "a") as f:
                 f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
                 f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
@@ -60,23 +66,28 @@ class scaling_job:
                         print('make sure there is no "/" at the end of the file path')
                         break
                     else:
-                        data_tag = data_name[-1]
+                        run_folder = data_name[-1]
+                        data_tag = self.tag
                         data_folder = str(path)
-                        self.create_job(data_folder, data_tag)
+                        self.create_job(data_folder, data_tag, run_folder)
             else:
                 print("Data processing folder not exist:" + line + " please check")
 
 class merging_job:
-    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str):
+    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.queue_option = queue_option
         self.phil_file = phil_file
+        self.tag = tag
+        self.resolution = str(resolution)
+        self.ref_pdb = ref_pdb
     
-    def create_job(self, data_folder:str, process_name:str):
-        processing_folder = self.processing_dir + "/" + process_name
+    def create_job(self, data_folder:str, process_name:str, run_name:str):
+        processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
         submit_script = processing_folder + "/" + str("run_merging_" + process_name + ".sh")
         phil = processing_folder + "/" + "merging.phil"
+        prefix = self.tag + "_merging_" + self.resolution + "A"
         print(colors.GREEN + colors.BOLD + "Submit merging jobs for: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
             print(colors.BLUE + colors.BOLD + "Merging job of " + process_name + " has been submitted, please check the foled: " + processing_folder + colors.ENDC)
@@ -88,6 +99,7 @@ class merging_job:
             with open(phil, "a") as p:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
+            change_phil(phil, self.resolution, prefix, self.ref_pdb)
             with open(submit_script, "a") as f:
                 f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
                 f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
@@ -101,6 +113,8 @@ class merging_job:
                     + submit_script
                 ]
             print("Running:", " ".join(command))
+            command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+            subprocess.call(command_merginglist, shell=True)
             subprocess.call(command, shell=True)
     
     def submit_job(self):
@@ -111,11 +125,23 @@ class merging_job:
                     print('make sure there is no "/" at the end of the file path')
                     break
                 else:
-                    data_tag = data_name[-2]
+                    data_tag = self.tag
                     data_folder = str(line)
-                    self.create_job(data_folder, data_tag)
+                    if not os.path.isdir(self.processing_dir + "/" + data_tag + "/"):
+                        version = 0 
+                    else:
+                        folder_list = [f.name for f in os.scandir(self.processing_dir + "/" + data_tag + "/") if f.is_dir()]
+                        lastchara_list = [n[1:] for n in folder_list]
+                        version_list = [b for b in lastchara_list if b.isdigit()]
+                        if not version_list:
+                            version = 0
+                        else:
+                            version = int(max(version_list)) + 1
+                    run_name = "v" + str('{0:03}'.format(version))
+                    print(colors.BLUE + colors.BOLD + "merging version: " + run_name + colors.ENDC)
+                    self.create_job(data_folder, data_tag, run_name)
             else:
-                print("Data processing folder not exist:" + line + " please check")
+                print("Data scaling folder not exist:" + line + " please check")
 
 
 
