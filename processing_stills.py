@@ -57,6 +57,7 @@ class generate_and_process:
                     + submit_script
                 ]
             print("Running:", " ".join(command))
+            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
             subprocess.call(command, shell=True)
 
     def submit_job(self):

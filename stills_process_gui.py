@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import ttk
+from textwrap import dedent
 from processing_stills import colors, generate_and_process
 from plotting_status import count, dot, bar, pie, plot
 from scaling_merging import scaling_job, merging_job
+from geo_refine import geometry_refinement
 #from geo_refine import geometry_refinement
 """
 This is a gui for submit dials stills processing
@@ -49,28 +51,30 @@ class stills_process(tk.Frame):
     ## Getting phil file
     tk.Label(self, text="Phil file stills", font=("Arial", 15)).grid(row=0, column=0)
     phil_file_stills = tk.Text(self, width=75, height=20, font=("Aria", 15))
-    phil_file_stills.insert(tk.END, """input.reference_geometry=/dls/i24/data/2023/mx25260-43/processing/Tiankun/JR/refined_000.expt
-#spotfinder.lookup.mask=/dls/i24/data/2022/mx25260-26/processing/Tiankun_beamtime_processing/dials/Mpro_H41A/test/pixels.mask
-#integration.lookup.mask=/dls/i24/data/2022/mx25260-26/processing/Tiankun_beamtime_processing/dials/Mpro_H41A/test/pixels.mask
-spotfinder.filter.min_spot_size=2
-spotfinder.filter.d_min=1.5
-spotfinder.filter.max_spot_size=10
+    default_phil_processing = dedent("""\
+                                  input.reference_geometry=/dls/i24/data/2023/mx25260-43/processing/Tiankun/JR/refined_000.expt
+                                  #spotfinder.lookup.mask=/dls/i24/data/2022/mx25260-26/processing/Tiankun_beamtime_processing/dials/Mpro_H41A/test/pixels.mask
+                                  #integration.lookup.mask=/dls/i24/data/2022/mx25260-26/processing/Tiankun_beamtime_processing/dials/Mpro_H41A/test/pixels.mask
+                                  spotfinder.filter.min_spot_size=2
+                                  spotfinder.filter.d_min=1.5
+                                  spotfinder.filter.max_spot_size=10
 
-mp.nproc = 20
-mp.method=multiprocessing
+                                  mp.nproc = 20
+                                  mp.method=multiprocessing
 
-indexing {
-  known_symmetry {
-    space_group = P212121
- 
-    unit_cell = 45.2, 45.7, 118.3, 90, 90, 90
- 
-  }
+                                  indexing {
+                                    known_symmetry {
+                                      space_group = P212121
+                                  
+                                      unit_cell = 45.2, 45.7, 118.3, 90, 90, 90
+                                  
+                                    }
 
-  stills.indexer=stills
-  stills.method_list=fft1d real_space_grid_search
-  multiple_lattice_search.max_lattices=10
-}""")
+                                    stills.indexer=stills
+                                    stills.method_list=fft1d real_space_grid_search
+                                    multiple_lattice_search.max_lattices=10
+                                  }""")
+    phil_file_stills.insert(tk.END, default_phil_processing)
     phil_file_stills.grid(row=1, column=0)
     #data dir
     tk.Label(self, text="Data dir stills", font=("Arial", 15)).grid(row=0, column=1)
@@ -122,30 +126,77 @@ class plot_stills(tk.Frame):
 class geo(tk.Frame):
   def __init__(self, master):
     tk.Frame.__init__(self, master)
-    tk.Label(self, text="Under construction", font=("Arial", 15)).grid(row=0, column=0)
+    tk.Label(self, text="Phil file geometry refinement", font=("Arial", 15)).grid(row=0, column=0)
+    #set default phil file
+    phil_file_georefine = tk.Text(self, width=75, height=20, font=("Aria", 15))
+    default_phil_georefine = dedent("""\
+                                refinement {
+                                  parameterisation {
+                                    auto_reduction {
+                                      min_nref_per_parameter = 3
+                                      action = fail fix *remove
+                                    }
+                                    beam {
+                                      fix = *all in_spindle_plane out_spindle_plane wavelength
+                                    }
+                                    detector {
+                                      fix_list = Tau1
+                                    }
+                                  }
+                                  refinery {
+                                    engine = SimpleLBFGS LBFGScurvs GaussNewton LevMar *SparseLevMar
+                                  }
+                                  reflections {
+                                    outlier {
+                                      algorithm = null auto mcd tukey *sauter_poon
+                                      separate_experiments = False
+                                      separate_panels = True
+                                    }
+                                  }
+                                } """)
+    phil_file_georefine.insert(tk.END, default_phil_georefine)
+    phil_file_georefine.grid(row=1, column=0)
+    #data dir
+    tk.Label(self, text="Data dir geo refinement", font=("Arial", 15)).grid(row=0, column=1)
+    data_folder_georefine = tk.Entry(self, width=60, font=("Aria", 15))
+    data_folder_georefine.grid(row=1, column=1)
+    #processing dir
+    tk.Label(self, text="Process folder geo refinement", font=("Arial", 15)).grid(row=2, column=1)
+    process_folder_georefine = tk.Entry(self, width=50, font=("Aria", 15))
+    process_folder_georefine.grid(row=3, column=1)
+    #buttons
+    tk.Button(self, text="Submit georefine job", width =15, height=4,font=("Arial", 12), command = lambda: geometry_refinement(data_folder_georefine.get(), process_folder_georefine.get(),\
+    phil_file_georefine.get("1.0","end")).run_job()).grid(row=8, column=0)
+    tk.Button(self, text="Compare geometry", width =15, height=4,font=("Arial", 12), command = lambda: geometry_refinement(data_folder_georefine.get(), process_folder_georefine.get(),\
+    phil_file_georefine.get("1.0","end")).run_compare()).grid(row=8, column=1)
+    
+
     
 #scaling tab
 class scaling(tk.Frame):
   def __init__(self, master, queue_option_scaling):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file scaling", font=("Arial", 15)).grid(row=0, column=0)
+    #set default phil file
     phil_file_scaling = tk.Text(self, width=75, height=20, font=("Aria", 15))
-    phil_file_scaling.insert(tk.END, """input.experiments_suffix=_integrated.expt
-input.reflections_suffix=_integrated.refl
-output.prefix=
-dispatch.step_list=input balance model_scaling modify filter errors_premerge scale postrefine statistics_unitcell statistics_beam model_statistics statistics_resolution
-input.parallel_file_load.method=uniform
-filter.outlier.min_corr=0.1
-#filter.algorithm=unit_cell
-#filter.unit_cell.value.relative_length_tolerance=0.03
-scaling.model=
-scaling.resolution_scalar=0.95
-scaling.mtz.mtz_column_F=I-obs
-merging.d_min=
-merging.merge_anomalous=True
-postrefinement.enable=True
-output.do_timing=True
-output.save_experiments_and_reflections=True""")
+    default_phil_scaling = dedent("""\
+                              input.experiments_suffix=_integrated.expt
+                              input.reflections_suffix=_integrated.refl
+                              output.prefix=
+                              dispatch.step_list=input balance model_scaling modify filter errors_premerge scale postrefine statistics_unitcell statistics_beam model_statistics statistics_resolution
+                              input.parallel_file_load.method=uniform
+                              filter.outlier.min_corr=0.1
+                              #filter.algorithm=unit_cell
+                              #filter.unit_cell.value.relative_length_tolerance=0.03
+                              scaling.model=
+                              scaling.resolution_scalar=0.95
+                              scaling.mtz.mtz_column_F=I-obs
+                              merging.d_min=
+                              merging.merge_anomalous=True
+                              postrefinement.enable=True
+                              output.do_timing=True
+                              output.save_experiments_and_reflections=True """)
+    phil_file_scaling.insert(tk.END, default_phil_scaling)
     phil_file_scaling.grid(row=1, column=0)
     #data dir
     tk.Label(self, text="Data dir scaling", font=("Arial", 15)).grid(row=0, column=1)
@@ -179,20 +230,21 @@ class merging(tk.Frame):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file merging", font=("Arial", 15)).grid(row=0, column=0)
     phil_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
-    phil_file_merging.insert(tk.END, """input.experiments_suffix=.expt
-input.reflections_suffix=.refl
-output.prefix=
-dispatch.step_list=input model_scaling statistics_unitcell statistics_beam model_statistics statistics_resolution group errors_merge statistics_intensity merge statistics_intensity_cxi
-input.parallel_file_load.method=uniform
-scaling.model=
-scaling.resolution_scalar=0.95
-scaling.mtz.mtz_column_F=I-obs
-statistics.n_bins=20
-merging.d_min=
-merging.merge_anomalous=True
-merging.error.model=ev11
-output.do_timing=True
-""")
+    default_phil_merging = dedent("""\
+                              input.experiments_suffix=.expt
+                              input.reflections_suffix=.refl
+                              output.prefix=
+                              dispatch.step_list=input model_scaling statistics_unitcell statistics_beam model_statistics statistics_resolution group errors_merge statistics_intensity merge statistics_intensity_cxi
+                              input.parallel_file_load.method=uniform
+                              scaling.model=
+                              scaling.resolution_scalar=0.95
+                              scaling.mtz.mtz_column_F=I-obs
+                              statistics.n_bins=20
+                              merging.d_min=
+                              merging.merge_anomalous=True
+                              merging.error.model=ev11
+                              output.do_timing=True """)
+    phil_file_merging.insert(tk.END, default_phil_merging)
     phil_file_merging.grid(row=1, column=0)
     #data dir
     tk.Label(self, text="Data dir", font=("Arial", 15)).grid(row=0, column=1)

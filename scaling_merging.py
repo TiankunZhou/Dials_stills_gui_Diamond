@@ -55,6 +55,7 @@ class scaling_job:
                     + submit_script
                 ]
             print("Running:", " ".join(command))
+            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
             subprocess.call(command, shell=True)
     
     def submit_job(self):
@@ -114,6 +115,7 @@ class merging_job:
                 ]
             print("Running:", " ".join(command))
             command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
             subprocess.call(command_merginglist, shell=True)
             subprocess.call(command, shell=True)
     
