@@ -3,6 +3,7 @@ from matplotlib import pyplot as plt
 from processing_stills import colors
 import os
 import sys
+import re
 from pathlib import Path
 """
 Plot cctbx.xfel.merge statistics. Data acquired from main log file
@@ -18,7 +19,7 @@ class plot_mergingstat():
     def extract_intensity(self, merging_log:str):       
         log_intensity = open(merging_log).readlines()
         log_intensity_strip = [a.strip() for a in log_intensity] #remove the space at the beginning of the line for searching keywords
-        log_intensity_tidy = [' '.join(x.replace(" - ", " ").replace("[ ", "[").split()) for x in log_intensity_strip] #convert multiple space and ' - ' to one space, using the strip result
+        log_intensity_tidy = [' ' .join(re.sub(r"(\[)|(\])", " ", x.replace(" - ", " ")).split()) for x in log_intensity_strip] #convert multiple space and ' - ' to one space and remove the [ (sometimes cause error), using the strip result
         select_intensity_all = [] #pick up every line between key lines in this list
         select_intensity_table = [] #pick up the table starts with "Bin"
         #use this variable (select_line) to pick up specific content between key lines
@@ -58,7 +59,7 @@ class plot_mergingstat():
     def extract_scaling(self, merging_log:str):
         log_scaling = open(merging_log).readlines()
         log_scaling_strip = [a.strip() for a in log_scaling] #remove the space at the beginning of the line for searching keywords
-        log_scaling_tidy = [' '.join(x.replace(" - ", " ").replace("[ ", "[").split()) for x in log_scaling_strip] #convert multiple space and ' - ' to one space, using the strip result
+        log_scaling_tidy = [' ' .join(re.sub(r"(\[)|(\])", " ", x.replace(" - ", " ")).split()) for x in log_scaling_strip] #convert multiple space and ' - ' to one space and remove the [ (sometimes cause error), using the strip result
         select_scaling_all = [] #pick up every line between key lines in this list 
         select_scaling_table = [] #pick up the table starts with "Bin"
         #use this variable (select_line) to pick up specific content between key lines
