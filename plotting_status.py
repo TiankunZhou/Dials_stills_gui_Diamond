@@ -1,11 +1,12 @@
 import glob
 from matplotlib import pyplot as plt
-#from tkinter import ttk #just define how you want the command to be
 import os
 import sys
 from pathlib import Path
+from processing_stills import colors
+import subprocess
 """
-Use gui for plotting
+Plot DIALS stills processing statistics, reading from the debug files
 
 """
 
@@ -291,9 +292,41 @@ class pie:
       plt.pie(image_number, labels=step, colors=['black', 'orange', 'grey'])
       plt.show()
 
+class uc_plot():
+  def __init__(self, data_dir, option):
+    self.data_dir = data_dir
+    self.option = option
+  def plot_stack(self):
+    command_stack = "cctbx.xfel.plot_uc_cloud_from_experiments combine_all_input=True "
+    for line in self.data_dir:
+      for i in glob.glob(line):
+        if os.path.isdir(os.path.join(i, "debug")):
+          command_stack += str(i) + "/*_refined.expt "
+        elif not os.path.isdir(os.path.join(line, "debug")):
+          print("Job " + str(i) + " is not exist, please check")
+
+    print("Runnung command: " + command_stack)
+    subprocess.call(command_stack, shell=True)
+  
+  def plot_single(self):
+    for line in self.data_dir:
+      for i in glob.glob(line):
+        if os.path.isdir(os.path.join(i, "debug")):
+          command_single = "cctbx.xfel.plot_uc_cloud_from_experiments combine_all_input=True " + str(i) + "/*_refined.expt"
+          print("Running command: " + command_single)
+          subprocess.call(command_single, shell=True)
+        elif not os.path.isdir(os.path.join(i, "debug")):
+          print("Job " + str(i) + " is not exist, please check")
+  
+  def plot_uc(self):
+    if self.option == "single":
+      self.plot_single()
+    elif self.option == "stack":
+      self.plot_stack()
+
 class plot:
   def read_option(option):
-    print("Select plot option: " + option)
+    print("Select plot option: " + option + colors.RED + colors.BOLD + " (single plot option is not recommand for uc plot, please use stack)" + colors.ENDC)
 
   def read_file_format(option):
     print("File format: " + option)
@@ -301,29 +334,26 @@ class plot:
   def read_queue_option(option):
     print("Queue option: " + option)
 
+  def read_merging_stats(option):
+    print("plot merging_stats: " + option)
+
   def dot(option, dir):
     if option == "single":
       dot.print(dir)
     elif option == "stack":
       dot.print_stack(dir)
-    else:
-      print("please choose a plot option")
 
   def bar(option, dir):
     if option == "single":
       bar.print(dir)
     elif option == "stack":
       bar.print_stack(dir)
-    else:
-      print("please choose a plot option")
   
   def pie(option, dir):
     if option == "single":
       pie.print(dir)
     elif option == "stack":
       pie.print_stack(dir)
-    else:
-      print("please choose a plot option")
     
   def real_time_bar(option, dir):
     print("under construction")

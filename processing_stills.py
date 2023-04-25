@@ -76,10 +76,21 @@ class generate_and_process:
                                 self.create_job(stills_arg, data_tag)
                         elif self.file_format == "Select file format":
                             print("Please select data format")
-                        else:
+                        elif self.file_format == "h5 palxfel":
+                            stills_arg = path + "/*." + "h5"
+                            data_tag = data_name[-1]
+                            self.create_job(stills_arg, data_tag)
+                        elif self.file_format == "h5 master":
+                            stills_arg = path + "/*master." + "h5"
+                            data_tag = data_name[-1]
+                            self.create_job(stills_arg, data_tag)
+                        elif self.file_format == "nxs":
                             stills_arg = path + "/*master." + self.file_format
                             data_tag = data_name[-1]
                             self.create_job(stills_arg, data_tag)
+                        else:
+                            print("Unknown format, please check")
+            
             else:
                 print("Some data folder not exist in:" + line + " please check")
 

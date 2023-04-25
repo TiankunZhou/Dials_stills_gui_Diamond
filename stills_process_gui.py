@@ -2,10 +2,10 @@ import tkinter as tk
 from tkinter import ttk
 from textwrap import dedent
 from processing_stills import colors, generate_and_process
-from plotting_status import count, dot, bar, pie, plot
+from plotting_status import count, dot, bar, pie, plot, uc_plot
 from scaling_merging import scaling_job, merging_job
 from geo_refine import geometry_refinement
-#from geo_refine import geometry_refinement
+from plot_merging_stats import plot_mergingstat
 """
 This is a gui for submit dials stills processing
 and merging jobs at DLS 
@@ -86,7 +86,7 @@ class stills_process(tk.Frame):
     process_folder_stills.grid(row=3, column=1)
     #file format
     tk.Label(self, text="File format", font=("Arial", 15)).grid(row=0, column=2)
-    file_format_list = ["cbf", "h5", "nxs"]
+    file_format_list = ["cbf", "h5 master", "h5 palxfel", "nxs"]
     file_format = tk.StringVar(self)
     file_format.set("Select file format")
     file_format_choice = tk.OptionMenu(self, file_format, *file_format_list, command = lambda selected: plot.read_file_format(file_format.get())).grid(row=1, column=2)
@@ -113,14 +113,14 @@ class plot_stills(tk.Frame):
 
     option_list = ["single", "stack"]
     plot_name = tk.StringVar(self)
-    plot_name.set("Select plot option")
+    plot_name.set("stack")
     plot_option = tk.OptionMenu(self, plot_name, *option_list, command = lambda selected: plot.read_option(plot_name.get()))
     plot_option.grid(row=0, column=2)
 
     tk.Button(self, text="Plot dot", width =12, height=4,font=("Arial", 12), command = lambda: plot.dot(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=2, column=0) #convert text to a list
     tk.Button(self, text="Plot bar", width =12, height=4,font=("Arial", 12), command = lambda: plot.bar(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=2, column=1)
     tk.Button(self, text="Plot pie", width =12, height=4,font=("Arial", 12), command = lambda: plot.pie(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=2, column=2)
-    #tk.Button(tab_plot, text="Plot bar realtime", width =12, height =4, font=("Arial", 12), command = lambda: plot.real_time_bar(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=2, column=3)
+    tk.Button(self, text="uc plot", width =12, height =4,font=("Arial", 12), command = lambda: uc_plot(check_dir.get("1.0","end").splitlines(), plot_name.get()).plot_uc()).grid(row=3, column=1)
 
 #geo tab
 class geo(tk.Frame):
@@ -169,9 +169,7 @@ class geo(tk.Frame):
     phil_file_georefine.get("1.0","end")).run_job()).grid(row=8, column=0)
     tk.Button(self, text="Compare geometry", width =15, height=4,font=("Arial", 12), command = lambda: geometry_refinement(data_folder_georefine.get(), process_folder_georefine.get(),\
     phil_file_georefine.get("1.0","end")).run_compare()).grid(row=8, column=1)
-    
-
-    
+     
 #scaling tab
 class scaling(tk.Frame):
   def __init__(self, master, queue_option_scaling):
@@ -268,7 +266,7 @@ class merging(tk.Frame):
     resolution_merging.grid(row=5, column=0)
     #buttons
     #tk.Button(self, text="Submit merging job", width =12, height=4,font=("Arial", 12), command = lambda:print(queue_option_merging.get())).grid(row=6, column=0)
-    tk.Button(self, text="Submit merging job", width =12, height=4,font=("Arial", 12), command = lambda: merging_job(data_folder_merging.get("1.0","end").splitlines(), \
+    tk.Button(self, text="Submit merging job", width =14, height=4,font=("Arial", 12), command = lambda: merging_job(data_folder_merging.get("1.0","end").splitlines(), \
     process_folder_merging.get(), queue_option_merging.get(), phil_file_merging.get("1.0","end"), sample_tag_merging.get(), resolution_merging.get(), ref_pdb_merging.get()\
     ).submit_job()).grid(row=6, column=0)
 
@@ -276,7 +274,29 @@ class merging(tk.Frame):
 class plot_merging(tk.Frame):
   def __init__(self, master):
     tk.Frame.__init__(self, master)
-    tk.Label(self, text="Under construction", font=("Arial", 15)).grid(row=0, column=0)
+    tk.Label(self, text="Enter the ABSOLUTE path of prcessing folder", font=("Arial", 15)).grid(row=0, column=0)
+
+    #merging dir
+    tk.Label(self, text="merging dir (absolute path)", font=("Arial", 15)).grid(row=0, column=1)
+    merging_dir = tk.Text(self, width=60, font=("Aria", 15))
+    merging_dir.grid(row=1, column=1)
+
+    #plot_1 option
+    tk.Label(self, text="Plot stats 1", font=("Arial", 15)).grid(row=0, column=2)
+    stats_1_list = ["CC1/2", "Rsplit", "I/sigma", "Multiplicity", "Completeness"]
+    stats_1 = tk.StringVar(self)
+    stats_1.set("CC1/2")
+    stats_1_choice = tk.OptionMenu(self, stats_1, *stats_1_list, command = lambda selected: plot.read_merging_stats(stats_1.get())).grid(row=1, column=2)
+
+    #plot_2 option
+    tk.Label(self, text="Plot stats 2", font=("Arial", 15)).grid(row=0, column=2)
+    stats_2_list = ["CC1/2", "Rsplit", "I/sigma", "Multiplicity", "Completeness"]
+    stats_2 = tk.StringVar(self)
+    stats_2.set("Multiplicity")
+    stats_2_choice = tk.OptionMenu(self, stats_2, *stats_2_list, command = lambda selected: plot.read_merging_stats(stats_2.get())).grid(row=2, column=2)
+
+    #button
+    tk.Button(self, text="Plot merging stats", width =15, height=4,font=("Arial", 12), command = lambda: plot_mergingstat(merging_dir.get("1.0","end").splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=3, column=0)
 
 #run the gui
 if __name__ == "__main__":
