@@ -282,21 +282,21 @@ class plot_merging(tk.Frame):
     merging_dir.grid(row=1, column=1)
 
     #plot_1 option
-    tk.Label(self, text="Plot stats 1", font=("Arial", 15)).grid(row=0, column=2)
+    tk.Label(self, text="Plot stats 1 & 2", font=("Arial", 15)).grid(row=0, column=2)
     stats_1_list = ["CC1/2", "Rsplit", "I/sigma", "Multiplicity", "Completeness"]
     stats_1 = tk.StringVar(self)
     stats_1.set("CC1/2")
     stats_1_choice = tk.OptionMenu(self, stats_1, *stats_1_list, command = lambda selected: plot.read_merging_stats(stats_1.get())).grid(row=1, column=2)
 
     #plot_2 option
-    tk.Label(self, text="Plot stats 2", font=("Arial", 15)).grid(row=0, column=2)
     stats_2_list = ["CC1/2", "Rsplit", "I/sigma", "Multiplicity", "Completeness"]
     stats_2 = tk.StringVar(self)
     stats_2.set("Multiplicity")
     stats_2_choice = tk.OptionMenu(self, stats_2, *stats_2_list, command = lambda selected: plot.read_merging_stats(stats_2.get())).grid(row=2, column=2)
 
     #button
-    tk.Button(self, text="Plot merging stats", width =15, height=4,font=("Arial", 12), command = lambda: plot_mergingstat(merging_dir.get("1.0","end").splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=3, column=0)
+    tk.Button(self, text="Plot merging stats", width =15, height=4,font=("Arial", 12), command = lambda: \
+    plot_mergingstat(merging_dir.get("1.0","end").splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=3, column=0)
 
 #run the gui
 if __name__ == "__main__":
