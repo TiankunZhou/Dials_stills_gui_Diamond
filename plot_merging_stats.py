@@ -14,7 +14,14 @@ Based on the current log file structure, changes may needed if the log file chan
 class plot_mergingstat():
     def __init__(self, data_dir:list):
         self.data_dir = data_dir
-    
+        
+    def is_float(self, string):
+        try:
+            float(string)
+            return True
+        except ValueError:
+            return False
+
     #extract the intensity statistics stored in a dict
     def extract_intensity(self, merging_log:str):       
         log_intensity = open(merging_log).readlines()
@@ -91,14 +98,14 @@ class plot_mergingstat():
             for i in indice:
                 if "%" in line_list[i]:
                     line_list[i] = float(line_list[i].replace("%", ""))/100
-            stats_intensity[line_list[0]] = ["{:.3f}".format(float(line_list[x])) for x in indice] #values list: 0.lowres, 1.highres, 2.CC1/2, 3.Rsplit
+            stats_intensity[line_list[0]] = ["{:.3f}".format(float(line_list[x])) if self.is_float(line_list[x]) else "0.000" for x in indice ] #values list: 0.lowres, 1.highres, 2.CC1/2, 3.Rsplit
         for line in select_overall_scaling:
             line_list = line.split(" ") #change the str to list
             indice = [2, 7] # select CC1/2 and Rsplit overall
             for i in indice:
                 if "%" in line_list[i]:
                     line_list[i] = float(line_list[i].replace("%", ""))/100
-            overall_scaling_stats[line_list[0]] = ["{:.3f}".format(float(line_list[x])) for x in indice] #values list: 0.CC1/2, 1.Rsplit
+            overall_scaling_stats[line_list[0]] = ["{:.3f}".format(float(line_list[x])) if self.is_float(line_list[x]) else "0.000" for x in indice ] #values list: 0.CC1/2, 1.Rsplit
         return select_scaling_all, stats_intensity, overall_scaling_stats
 
     #extact the value for plotting
