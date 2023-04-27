@@ -14,14 +14,14 @@ create and submit the dails.stills_processing
 """
 
 #color setting
-class colors:
+class colors():
     BOLD = '\033[1m'
     GREEN = '\033[32m'
     BLUE = '\033[34m'
     RED = '\033[31m'
     ENDC = '\033[m'
 
-class generate_and_process:
+class generate_and_process():
     """generate the procrssing files and submit the job"""
     def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str):
         self.file_format = file_format
