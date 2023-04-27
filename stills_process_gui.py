@@ -30,8 +30,8 @@ class tabs(tk.Frame):
     self.stills_process = stills_process(self.notebook)
     self.plot_stills = plot_stills(self.notebook)
     self.geo = geo(self.notebook)
-    self.scaling = scaling(self.notebook, self.stills_process.queue_option_stills)
-    self.merging = merging(self.notebook, self.stills_process.queue_option_stills)
+    self.scaling = scaling(self.notebook, self.stills_process.cluster_option_stills)
+    self.merging = merging(self.notebook, self.stills_process.cluster_option_stills)
     self.plot_merging = plot_merging(self.notebook)
 
     #add tabs to the gui
@@ -90,17 +90,17 @@ class stills_process(tk.Frame):
     file_format = tk.StringVar(self)
     file_format.set("Select file format")
     file_format_choice = tk.OptionMenu(self, file_format, *file_format_list, command = lambda selected: plot.read_file_format(file_format.get())).grid(row=1, column=2)
-    #queue option
-    tk.Label(self, text="Queue option", font=("Arial", 15)).grid(row=2, column=2)
-    queue_option_list = ["low", "medium", "high"]
-    queue_option = tk.StringVar(self)
-    queue_option.set("medium")
-    queue_choice = tk.OptionMenu(self, queue_option, *queue_option_list, command = lambda selected: plot.read_queue_option(queue_option.get())).grid(row=3, column=2)
-    #make the queue option available to other classes
-    self.queue_option_stills = queue_option
+    #cluster option
+    tk.Label(self, text="Cluster option", font=("Arial", 15)).grid(row=2, column=2)
+    cluster_option_list = ["sge", "slurm EuXFEL"]
+    cluster_option = tk.StringVar(self)
+    cluster_option.set("sge")
+    cluster_choice = tk.OptionMenu(self, cluster_option, *cluster_option_list, command = lambda selected: plot.read_cluster_option(cluster_option.get())).grid(row=3, column=2)
+    #make the cluster option available to other classes
+    self.cluster_option_stills = cluster_option
     #buttons
     tk.Button(self, text="Submit job", width =12, height=4,font=("Arial", 12), command = lambda: generate_and_process(file_format.get(), data_folder_stills.get("1.0","end").splitlines(), \
-    process_folder_stills.get(), queue_option.get(), phil_file_stills.get("1.0","end")).submit_job()).grid(row=4, column=0)
+    process_folder_stills.get(), cluster_option.get(), phil_file_stills.get("1.0","end")).submit_job()).grid(row=4, column=0)
 
 #plot tab
 class plot_stills(tk.Frame):
@@ -172,7 +172,7 @@ class geo(tk.Frame):
      
 #scaling tab
 class scaling(tk.Frame):
-  def __init__(self, master, queue_option_scaling):
+  def __init__(self, master, cluster_option_scaling):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file scaling", font=("Arial", 15)).grid(row=0, column=0)
     #set default phil file
@@ -217,14 +217,13 @@ class scaling(tk.Frame):
     resolution_scaling = tk.Entry(self, width=50, font=("Aria", 15))
     resolution_scaling.grid(row=5, column=0)
     #buttons
-    #tk.Button(self, text="Submit scaling job", width =12, height=4,font=("Arial", 12), command = lambda:print(queue_option_scaling.get())).grid(row=8, column=0)
     tk.Button(self, text="Submit scaling job", width =12, height=4,font=("Arial", 12), command = lambda: scaling_job(data_folder_scaling.get("1.0","end").splitlines(), \
-    process_folder_scaling.get(), queue_option_scaling.get(), phil_file_scaling.get("1.0","end"), sample_tag_scaling.get(), resolution_scaling.get(), ref_pdb_scaling.get()\
+    process_folder_scaling.get(), cluster_option_scaling.get(), phil_file_scaling.get("1.0","end"), sample_tag_scaling.get(), resolution_scaling.get(), ref_pdb_scaling.get()\
     ).submit_job()).grid(row=8, column=0)
 
 #merging tab
 class merging(tk.Frame):
-  def __init__(self, master, queue_option_merging):
+  def __init__(self, master, cluster_option_merging):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file merging", font=("Arial", 15)).grid(row=0, column=0)
     phil_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
@@ -265,9 +264,8 @@ class merging(tk.Frame):
     resolution_merging = tk.Entry(self, width=50, font=("Aria", 15))
     resolution_merging.grid(row=5, column=0)
     #buttons
-    #tk.Button(self, text="Submit merging job", width =12, height=4,font=("Arial", 12), command = lambda:print(queue_option_merging.get())).grid(row=6, column=0)
     tk.Button(self, text="Submit merging job", width =14, height=4,font=("Arial", 12), command = lambda: merging_job(data_folder_merging.get("1.0","end").splitlines(), \
-    process_folder_merging.get(), queue_option_merging.get(), phil_file_merging.get("1.0","end"), sample_tag_merging.get(), resolution_merging.get(), ref_pdb_merging.get()\
+    process_folder_merging.get(), cluster_option_merging.get(), phil_file_merging.get("1.0","end"), sample_tag_merging.get(), resolution_merging.get(), ref_pdb_merging.get()\
     ).submit_job()).grid(row=6, column=0)
 
 #merging plot

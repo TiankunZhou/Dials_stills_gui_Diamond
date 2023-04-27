@@ -9,17 +9,17 @@ import sys
 import numpy as np 
 import glob
 from change_line import change_phil
-
+from textwrap import dedent
 
 """
 Sacling and merging settings
 """
 
 class scaling_job:
-    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
+    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
-        self.queue_option = queue_option
+        self.cluster_option = cluster_option
         self.phil_file = phil_file
         self.tag = tag
         self.resolution = str(resolution)
@@ -42,21 +42,42 @@ class scaling_job:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
-            with open(submit_script, "a") as f:
-                f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
-                f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
-            print(phil)
+            if self.cluster_option == "sge":
+                with open(submit_script, "a") as f:
+                    f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
+                    f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                print(phil)
 
-            os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            command = [
-                    "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                    + self.queue_option
-                    + ".q "
-                    + submit_script
-                ]
-            print("Running:", " ".join(command))
-            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-            subprocess.call(command, shell=True)
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = [
+                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
+                        + "medium.q "
+                        + submit_script
+                    ]
+                print("Running:", " ".join(command))
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command, shell=True)
+            elif self.cluster_option == "slurm EuXFEL":
+                print("Slurm under construction")
+                with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --partition=upex
+                                    #SBATCH --time=01:00:00                           # Maximum time requested
+                                    #SBATCH --nodes=1                               # Number of nodes
+                                    #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
+                                    #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
+                    f.write("#SBATCH --job-name " + run_name + "\n")                                                                 
+                    f.write("source /usr/share/Modules/init/bash \n")
+                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
+                print(phil)
+
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = "sbatch " + submit_script
+                print("Running:", command)
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                #subprocess.call(command, cwd=processing_folder, shell=True)
     
     def submit_job(self):
         for line in self.data_dir:
@@ -75,10 +96,10 @@ class scaling_job:
                 print("Data processing folder not exist:" + line + " please check")
 
 class merging_job:
-    def __init__(self, data_dir:list, processing_dir:str, queue_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
+    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
-        self.queue_option = queue_option
+        self.cluster_option = cluster_option
         self.phil_file = phil_file
         self.tag = tag
         self.resolution = str(resolution)
@@ -101,23 +122,47 @@ class merging_job:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
-            with open(submit_script, "a") as f:
-                f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
-                f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
-            print(phil)
+            if self.cluster_option == "sge":
+                with open(submit_script, "a") as f:
+                    f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
+                    f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                print(phil)
 
-            os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            command = [
-                    "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                    + self.queue_option
-                    + ".q "
-                    + submit_script
-                ]
-            print("Running:", " ".join(command))
-            command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
-            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-            subprocess.call(command_merginglist, shell=True)
-            subprocess.call(command, shell=True)
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = [
+                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
+                        + "medium.q "
+                        + submit_script
+                    ]
+                print("Running:", " ".join(command))
+                command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command_merginglist, shell=True)
+                subprocess.call(command, shell=True)
+            elif self.cluster_option == "slurm EuXFEL":
+                print("Slurm under construction")
+                with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --partition=upex
+                                    #SBATCH --time=01:00:00                           # Maximum time requested
+                                    #SBATCH --nodes=1                               # Number of nodes
+                                    #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
+                                    #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
+                    f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
+                    f.write("source /usr/share/Modules/init/bash \n")
+                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
+                print(phil)
+
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = "sbatch " + submit_script
+                print("Running:", command)
+                command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command_merginglist, shell=True)
+                #subprocess.call(command, shell=True)
+
     
     def submit_job(self):
         for line in self.data_dir:
@@ -144,6 +189,7 @@ class merging_job:
                     self.create_job(data_folder, data_tag, run_name)
             else:
                 print("Data scaling folder not exist:" + line + " please check")
+
 
 
 

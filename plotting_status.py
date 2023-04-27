@@ -331,8 +331,8 @@ class plot:
   def read_file_format(option):
     print("File format: " + option)
 
-  def read_queue_option(option):
-    print("Queue option: " + option)
+  def read_cluster_option(option):
+    print("Cluster option: " + option)
 
   def read_merging_stats(option):
     print("plot merging_stats: " + option)

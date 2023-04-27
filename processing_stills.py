@@ -1,6 +1,6 @@
 
 from __future__ import absolute_import, division, print_function
-
+from textwrap import dedent
 import os
 import shutil
 import stat
@@ -23,11 +23,11 @@ class colors:
 
 class generate_and_process:
     """generate the procrssing files and submit the job"""
-    def __init__(self, file_format:str, data_dir:list, processing_dir:str, queue_option:str, phil_file:str):
+    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str):
         self.file_format = file_format
         self.data_dir = data_dir
         self.processing_dir = processing_dir
-        self.queue_option = queue_option
+        self.cluster_option = cluster_option
         self.phil_file = phil_file
 
     def create_job(self, data_files:str, process_name:str):
@@ -44,21 +44,42 @@ class generate_and_process:
                 os.remove(phil)
             with open(phil, "a") as p:
                 p.write(self.phil_file)
-            with open(submit_script, "a") as f:
-                f.write("module load dials/latest\n")
-                f.write("dials.stills_process " + data_files + " " + phil + "\n")
-            print(data_files)
+            if self.cluster_option == "sge":
+                with open(submit_script, "a") as f:
+                    f.write("module load dials/latest\n")
+                    f.write("dials.stills_process " + data_files + " " + phil + "\n")
+                print(data_files)
 
-            os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            command = [
-                    "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                    + self.queue_option
-                    + ".q "
-                    + submit_script
-                ]
-            print("Running:", " ".join(command))
-            #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-            subprocess.call(command, shell=True)
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = [
+                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
+                        + "medium.q "
+                        + submit_script
+                    ]
+                print("Running:", " ".join(command))
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command, shell=True)
+            elif self.cluster_option == "slurm EuXFEL":
+                print("under condtruction")
+                with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --partition=upex
+                                    #SBATCH --time=01:00:00                           # Maximum time requested
+                                    #SBATCH --nodes=2                               # Number of nodes
+                                    #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
+                                    #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
+                    f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
+                    f.write("source /usr/share/Modules/init/bash \n")
+                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
+                print(data_files)
+
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = "sbatch " + submit_script
+                print("Running: ", command)
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                #subprocess.call(command, cwd=processing_folder, shell=True)
 
     def submit_job(self):
         for line in self.data_dir:
@@ -85,7 +106,7 @@ class generate_and_process:
                             data_tag = data_name[-1]
                             self.create_job(stills_arg, data_tag)
                         elif self.file_format == "nxs":
-                            stills_arg = path + "/*master." + self.file_format
+                            stills_arg = path + "/*." + self.file_format
                             data_tag = data_name[-1]
                             self.create_job(stills_arg, data_tag)
                         else:
