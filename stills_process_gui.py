@@ -6,6 +6,8 @@ from plotting_status import count, dot, bar, pie, plot, uc_plot
 from scaling_merging import scaling_job, merging_job
 from geo_refine import geometry_refinement
 from plot_merging_stats import plot_mergingstat
+from processing_xia2 import run_xia2
+from scaling_merging_xia2 import merging_xia2
 """
 This is a gui for submit dials stills processing
 and merging jobs at DLS 
@@ -33,6 +35,10 @@ class tabs(tk.Frame):
     self.scaling = scaling(self.notebook, self.stills_process.cluster_option_stills)
     self.merging = merging(self.notebook, self.stills_process.cluster_option_stills)
     self.plot_merging = plot_merging(self.notebook)
+    self.xia2_processing = xia2_processing(self.notebook, self.stills_process.cluster_option_stills, self.stills_process.file_format_option)
+    self.xia2_plot_process = xia2_plot_process(self.notebook)
+    self.xia2_merging = xia2_merging(self.notebook, self.stills_process.cluster_option_stills)
+    self.xia2_merging_plot = xia2_merging_plot(self.notebook)
 
     #add tabs to the gui
     self.notebook.add(self.stills_process, text="Stills processing")
@@ -41,6 +47,10 @@ class tabs(tk.Frame):
     self.notebook.add(self.scaling, text="Scaling")
     self.notebook.add(self.merging, text="Merging")
     self.notebook.add(self.plot_merging, text="Merging statistics")
+    self.notebook.add(self.xia2_processing, text="Xia2 processing")
+    self.notebook.add(self.xia2_plot_process, text="Plot xia2 processing")
+    self.notebook.add(self.xia2_merging, text="Xia2 merging")
+    self.notebook.add(self.xia2_merging_plot, text="Xia2 merging statistics")
 
     self.notebook.pack()    
 
@@ -98,6 +108,8 @@ class stills_process(tk.Frame):
     cluster_choice = tk.OptionMenu(self, cluster_option, *cluster_option_list, command = lambda selected: plot.read_cluster_option(cluster_option.get())).grid(row=3, column=2)
     #make the cluster option available to other classes
     self.cluster_option_stills = cluster_option
+    #make the file format available for xia2
+    self.file_format_option = file_format
     #buttons
     tk.Button(self, text="Submit job", width =12, height=4,font=("Arial", 12), command = lambda: generate_and_process(file_format.get(), data_folder_stills.get("1.0","end").splitlines(), \
     process_folder_stills.get(), cluster_option.get(), phil_file_stills.get("1.0","end")).submit_job()).grid(row=4, column=0)
@@ -295,6 +307,75 @@ class plot_merging(tk.Frame):
     #button
     tk.Button(self, text="Plot merging stats", width =15, height=4,font=("Arial", 12), command = lambda: \
     plot_mergingstat(merging_dir.get("1.0","end").splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=3, column=0)
+
+class xia2_processing(tk.Frame):
+  def __init__(self, master, cluster_option_xia2, file_format):
+    tk.Frame.__init__(self, master)
+    tk.Label(self, text="Enter the ABSOLUTE path of the data dir", font=("Arial", 15)).grid(row=0, column=0)
+    submit_file_xia2 = tk.Text(self, width=75, height=20, font=("Aria", 15))
+    default_submit_file_xia2 = dedent("""\
+                                      reference_geometry=None \\
+                                      mask=None \\
+                                      unit_cell=96.4,96.4,96.4,90,90,90 \\
+                                      space_group=P213 \\
+                                      max_lattices=10 \\
+                                      reference=None \\
+                                      min_spot_size=2 \\
+                                      absolute_length_tolerance=3.0 \\
+                                      absolute_angle_tolerance=5.0 \\
+                                      steps=find_spots+index+integrate""")
+    submit_file_xia2.insert(tk.END, default_submit_file_xia2)
+    submit_file_xia2.grid(row=1, column=0)
+    #data dir
+    tk.Label(self, text="Data dir xia2", font=("Arial", 15)).grid(row=0, column=1)
+    data_folder_xia2 = tk.Text(self, width=50, height=15, font=("Aria", 15))
+    data_folder_xia2.grid(row=1, column=1)
+    #process folder
+    tk.Label(self, text="Process folder xia2", font=("Arial", 15)).grid(row=2, column=1)
+    process_folder_xia2 = tk.Entry(self, width=50, font=("Aria", 15))
+    process_folder_xia2.grid(row=3, column=1)
+    #buttons
+    tk.Button(self, text="Submit job", width =12, height=4,font=("Arial", 12), command = lambda: run_xia2(file_format.get(), data_folder_xia2.get("1.0","end").splitlines(), \
+    process_folder_xia2.get(), cluster_option_xia2.get(), submit_file_xia2.get("1.0","end")).submit_xia2()).grid(row=4, column=0)
+
+class xia2_plot_process(tk.Frame):
+  def __init__(self, master):
+    tk.Frame.__init__(self, master)
+    tk.Label(self, text="Under constrction", font=("Arial", 15)).grid(row=0, column=0)
+
+class xia2_merging(tk.Frame):
+  def __init__(self, master, cluster_option_merging):
+    tk.Frame.__init__(self, master)
+    tk.Label(self, text="scaling/merging submit file (normally empty)", font=("Arial", 15)).grid(row=0, column=0)
+    sbumit_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
+    default_sbumit_file_merging = dedent("""\
+                                        reference=None \\ """)
+    sbumit_file_merging.insert(tk.END, default_sbumit_file_merging)
+    sbumit_file_merging.grid(row=1, column=0)
+    #data dir
+    tk.Label(self, text="Data dir", font=("Arial", 15)).grid(row=0, column=1)
+    data_folder_merging = tk.Text(self, width=60, height=20, font=("Aria", 15))
+    data_folder_merging.grid(row=1, column=1)
+    #process folder
+    tk.Label(self, text="Process folder", font=("Arial", 15)).grid(row=2, column=1)
+    process_folder_merging = tk.Entry(self, width=50, font=("Aria", 15))
+    process_folder_merging.grid(row=3, column=1)
+    #tag
+    tk.Label(self, text="Sample tag merging", font=("Arial", 15)).grid(row=4, column=1)
+    sample_tag_merging = tk.Entry(self, width=50, font=("Aria", 15))
+    sample_tag_merging.grid(row=5, column=1)
+    #resolution
+    tk.Label(self, text="Resolution merging", font=("Arial", 15)).grid(row=2, column=0)
+    resolution_merging = tk.Entry(self, width=50, font=("Aria", 15))
+    resolution_merging.grid(row=3, column=0)
+    #buttons
+    tk.Button(self, text="Submit xia2 merging job", width =16, height=4,font=("Arial", 12), command = lambda: merging_xia2(data_folder_merging.get("1.0","end").splitlines(), \
+    process_folder_merging.get(), cluster_option_merging.get(), sample_tag_merging.get(), resolution_merging.get(), sbumit_file_merging.get("1.0","end")).submit_xia2_merging()).grid(row=6, column=0)
+
+class xia2_merging_plot(tk.Frame):
+  def __init__(self, master):
+    tk.Frame.__init__(self, master)
+    tk.Label(self, text="Under constrction", font=("Arial", 15)).grid(row=0, column=0) 
 
 #run the gui
 if __name__ == "__main__":

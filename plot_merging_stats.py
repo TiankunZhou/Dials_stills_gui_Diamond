@@ -11,7 +11,7 @@ Based on the current log file structure, changes may needed if the log file chan
 
 """
 
-class plot_mergingstat():
+class plot_mergingstat:
     def __init__(self, data_dir:list):
         self.data_dir = data_dir
         

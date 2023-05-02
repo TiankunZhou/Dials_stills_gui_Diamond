@@ -11,7 +11,7 @@ Plot DIALS stills processing statistics, reading from the debug files
 """
 
 ###define the value###
-class count():
+class count:
   def images(file_name):
     count = 0
     image =[]
@@ -64,7 +64,7 @@ class count():
           count += Path(f).read_text().count(str(keywords))
       return count
 
-class dot():
+class dot:
   def print(dir):
     for line in dir:
       for i in glob.glob(line):
@@ -171,7 +171,7 @@ class dot():
     plt.scatter(x, y, marker="o", color=colors)
     plt.show()
 
-class bar():
+class bar:
   def print(dir):
     for line in dir:
       for i in glob.glob(line):
@@ -230,7 +230,7 @@ class bar():
       plt.bar(step, image_number, color=['black', 'blue', 'orange', 'grey'])
       plt.show()
 
-class pie():
+class pie:
   def print(dir):
     for line in dir:
       for i in glob.glob(line):
@@ -292,7 +292,7 @@ class pie():
       plt.pie(image_number, labels=step, colors=['black', 'orange', 'grey'])
       plt.show()
 
-class uc_plot():
+class uc_plot:
   def __init__(self, data_dir, option):
     self.data_dir = data_dir
     self.option = option
@@ -324,7 +324,7 @@ class uc_plot():
     elif self.option == "stack":
       self.plot_stack()
 
-class plot():
+class plot:
   def read_option(option):
     print("Select plot option: " + option + colors.RED + colors.BOLD + " (single plot option is not recommand for uc plot, please use stack)" + colors.ENDC)
 

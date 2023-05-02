@@ -1,53 +1,42 @@
-
 from __future__ import absolute_import, division, print_function
 from textwrap import dedent
 import os
-import shutil
 import stat
-import string
 import subprocess
 import sys
 import numpy as np 
 import glob
+from processing_stills import colors
 """
-create and submit the dails.stills_processing
+create and submit the xia2.ssx jobs
 """
 
-#color setting
-class colors:
-    BOLD = '\033[1m'
-    GREEN = '\033[32m'
-    BLUE = '\033[34m'
-    RED = '\033[31m'
-    ENDC = '\033[m'
-
-class generate_and_process:
-    """generate the procrssing files and submit the job"""
-    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str):
+class run_xia2:
+    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, submit_file:str):
         self.file_format = file_format
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
-        self.phil_file = phil_file
-
-    def create_job(self, data_files:str, process_name:str):
+        self.submit_file = submit_file
+    
+    def generate_xia2(self, data_files:str, process_name:str):
+        print("under construction")
         processing_folder = self.processing_dir + "/" + process_name
-        submit_script = processing_folder + "/" + str("run_" + process_name + ".sh")
-        phil = processing_folder + "/" + "input.phil"
+        submit_script = processing_folder + "/" + str("run_xia2_process_" + process_name + ".sh")
         print(colors.GREEN + colors.BOLD + "Submit jobs for: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
-            print(colors.BLUE + colors.BOLD + "dataset " + process_name + " is processing or has been processed, please check the foled: " + processing_folder + colors.ENDC)
+            print(colors.BLUE + colors.BOLD + "xia2.ssx job for dataset " + process_name + " is processing or has been processed, please check the foled: " + processing_folder + colors.ENDC)        
         else:
             if not os.path.isdir(processing_folder):
                 os.makedirs(processing_folder)
-            if os.path.exists(phil):
-                os.remove(phil)
-            with open(phil, "a") as p:
-                p.write(self.phil_file)
             if self.cluster_option == "sge":
                 with open(submit_script, "a") as f:
                     f.write("module load dials/latest\n")
-                    f.write("dials.stills_process " + data_files + " " + phil + "\n")
+                    if self.file_format == "cbf":
+                        f.write("xia2.ssx template=" + data_files + "\\\n")
+                    else:
+                        f.write("xia2.ssx image=" + data_files + " \\\n")
+                    f.write(self.submit_file)
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -72,7 +61,7 @@ class generate_and_process:
                     f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
                     f.write("source /usr/share/Modules/init/bash \n")
                     f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
-                    f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
+                    f.write(self.submit_file)
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -81,7 +70,8 @@ class generate_and_process:
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 #subprocess.call(command, cwd=processing_folder, shell=True)
 
-    def submit_job(self):
+    def submit_xia2(self):
+        print("under construction")
         for line in self.data_dir:
             if glob.glob(line):
                 for path in glob.glob(line):
@@ -94,28 +84,29 @@ class generate_and_process:
                             for i in range(10):
                                 stills_arg = path + "/*" + str(i) + ".cbf"
                                 data_tag = data_name[-1] + str(i)
-                                self.create_job(stills_arg, data_tag)
+                                self.generate_xia2(stills_arg, data_tag)
                         elif self.file_format == "Select file format":
                             print("Please select data format")
                         elif self.file_format == "h5 palxfel":
                             stills_arg = path + "/*." + "h5"
                             data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
+                            self.generate_xia2(stills_arg, data_tag)
                         elif self.file_format == "h5 master":
                             stills_arg = path + "/*master." + "h5"
                             data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
+                            self.generate_xia2(stills_arg, data_tag)
                         elif self.file_format == "nxs":
                             stills_arg = path + "/*." + self.file_format
                             data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
+                            self.generate_xia2(stills_arg, data_tag)
                         else:
                             print("Unknown format, please check")
             
             else:
                 print("Some data folder not exist in:" + line + " please check")
 
-    def test(self):
-        print("test")
-        print(str(self.processing_dir))
+
+
+
+
 
