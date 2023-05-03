@@ -1,0 +1,89 @@
+"""
+You can merge the data using cctbx.xfel WITHOUT the reference pdb/mtz, this requires four steps:
+    1. Scaling the processed data using MARK1 algorism
+    2. Merging the data using MARK1 algorism (use the output from scaling1), this will generate a .mtz files
+    3. Scaling the processed data using MARK0 algorism, use the .mtz from mark1 as reference
+    4. Merging the processed data using MARK0 algorism (use the output from scaling0), use the .mtz from mark1 as reference 
+"""
+
+Mark1_scaling:
+
+input.experiments_suffix=_integrated.expt
+input.reflections_suffix=_integrated.refl
+output.prefix=
+dispatch.step_list=input balance model_scaling modify filter errors_premerge scale postrefine statistics_unitcell statistics_beam model_statistics statistics_resolution
+input.parallel_file_load.method=uniform
+select.algorithm=significance_filter
+select.significance_filter.sigma=0.1
+scaling.resolution_scalar=0.96
+scaling.algorithm=mark1
+scaling.unit_cell=60.4 79.7 56.5 90 90 90
+scaling.space_group=P21212
+merging.d_min=
+merging.merge_anomalous=True
+merging.error.model=errors_from_sample_residuals
+postrefinement.enable=False
+statistics.n_bins=20
+output.do_timing=True
+output.save_experiments_and_reflections=True 
+
+
+
+Mark1_merging:
+
+input.experiments_suffix=.expt
+input.reflections_suffix=.refl
+output.prefix=
+dispatch.step_list=input model_scaling statistics_unitcell statistics_beam model_statistics statistics_resolution group errors_merge statistics_intensity merge statistics_intensity_cxi
+input.parallel_file_load.method=uniform
+scaling.resolution_scalar=0.96
+postrefinement.enable=False
+scaling.algorithm=mark1
+statistics.n_bins=20
+merging.d_min=
+merging.merge_anomalous=True
+merging.error.model=errors_from_sample_residuals
+output.do_timing=True
+scaling.unit_cell=41.35 41.35 119.22 90 90 90
+scaling.space_group=P43
+
+
+
+Mark0_scaling:
+
+input.experiments_suffix=_integrated.expt
+input.reflections_suffix=_integrated.refl
+output.prefix=
+dispatch.step_list=input balance model_scaling modify filter errors_premerge scale postrefine statistics_unitcell statistics_beam model_statistics statistics_resolution
+input.parallel_file_load.method=uniform
+filter.outlier.min_corr=-1
+filter.algorithm=unit_cell
+select.algorithm=significance_filter
+select.significance_filter.sigma=0.1
+scaling.model=
+scaling.resolution_scalar=0.95
+scaling.mtz.mtz_column_F=Iobs
+merging.d_min=
+merging.merge_anomalous=True
+postrefinement.enable=True
+output.do_timing=True
+output.save_experiments_and_reflections=True
+
+
+
+Mark0_merging:
+
+input.experiments_suffix=.expt
+input.reflections_suffix=.refl
+output.prefix=
+dispatch.step_list=input model_scaling statistics_unitcell statistics_beam model_statistics statistics_resolution group errors_merge statistics_intensity merge statistics_intensity_cxi
+input.parallel_file_load.method=uniform
+scaling.model=
+scaling.resolution_scalar=0.95
+scaling.mtz.mtz_column_F=Iobs
+statistics.n_bins=20
+merging.d_min=
+merging.merge_anomalous=True
+merging.error.model=ev11
+output.do_timing=True
+

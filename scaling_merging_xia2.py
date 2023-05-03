@@ -14,12 +14,11 @@ Submit the xia2 scaling/merging jobs using xia2.ssx_reduce
 """
 
 class merging_xia2:
-    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, tag:str, resolution:float, submit_file:str):
+    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, tag:str, submit_file:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
         self.tag = tag
-        self.resolution = str(resolution)
         self.submit_file = submit_file
     
     def create_xia2_merging(self, data_folder:str, process_name:str, run_name:str):
@@ -35,7 +34,7 @@ class merging_xia2:
             if self.cluster_option == "sge":
                 with open(submit_script, "a") as f:
                     f.write("module load dials/latest\n")
-                    f.write("xia2.ssx_reduce "+ data_files + " d_min=" + self.resolution + "\n")
+                    f.write("xia2.ssx_reduce "+ data_files + " \\\n")
                     f.write(self.submit_file)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -60,7 +59,7 @@ class merging_xia2:
                     f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
                     f.write("source /usr/share/Modules/init/bash \n")
                     f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
-                    f.write("xia2.ssx_reduce "+ data_files + " d_min=" + self.resolution + "\n")
+                    f.write("xia2.ssx_reduce "+ data_files + " \\\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)

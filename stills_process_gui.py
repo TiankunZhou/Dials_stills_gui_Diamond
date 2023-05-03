@@ -349,7 +349,8 @@ class xia2_merging(tk.Frame):
     tk.Label(self, text="scaling/merging submit file (normally empty)", font=("Arial", 15)).grid(row=0, column=0)
     sbumit_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
     default_sbumit_file_merging = dedent("""\
-                                        reference=None \\ """)
+                                        reference=None \\ 
+                                        d_min=None \\""")
     sbumit_file_merging.insert(tk.END, default_sbumit_file_merging)
     sbumit_file_merging.grid(row=1, column=0)
     #data dir
@@ -357,20 +358,16 @@ class xia2_merging(tk.Frame):
     data_folder_merging = tk.Text(self, width=60, height=20, font=("Aria", 15))
     data_folder_merging.grid(row=1, column=1)
     #process folder
-    tk.Label(self, text="Process folder", font=("Arial", 15)).grid(row=2, column=1)
+    tk.Label(self, text="Process folder", font=("Arial", 15)).grid(row=2, column=0)
     process_folder_merging = tk.Entry(self, width=50, font=("Aria", 15))
-    process_folder_merging.grid(row=3, column=1)
+    process_folder_merging.grid(row=3, column=0)
     #tag
-    tk.Label(self, text="Sample tag merging", font=("Arial", 15)).grid(row=4, column=1)
+    tk.Label(self, text="Sample tag merging", font=("Arial", 15)).grid(row=2, column=1)
     sample_tag_merging = tk.Entry(self, width=50, font=("Aria", 15))
-    sample_tag_merging.grid(row=5, column=1)
-    #resolution
-    tk.Label(self, text="Resolution merging", font=("Arial", 15)).grid(row=2, column=0)
-    resolution_merging = tk.Entry(self, width=50, font=("Aria", 15))
-    resolution_merging.grid(row=3, column=0)
+    sample_tag_merging.grid(row=3, column=1)
     #buttons
     tk.Button(self, text="Submit xia2 merging job", width =16, height=4,font=("Arial", 12), command = lambda: merging_xia2(data_folder_merging.get("1.0","end").splitlines(), \
-    process_folder_merging.get(), cluster_option_merging.get(), sample_tag_merging.get(), resolution_merging.get(), sbumit_file_merging.get("1.0","end")).submit_xia2_merging()).grid(row=6, column=0)
+    process_folder_merging.get(), cluster_option_merging.get(), sample_tag_merging.get(), sbumit_file_merging.get("1.0","end")).submit_xia2_merging()).grid(row=6, column=0)
 
 class xia2_merging_plot(tk.Frame):
   def __init__(self, master):
