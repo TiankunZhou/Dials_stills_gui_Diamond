@@ -33,7 +33,7 @@ class run_xia2:
                 with open(submit_script, "a") as f:
                     f.write("module load dials/latest\n")
                     if self.file_format == "cbf":
-                        f.write("xia2.ssx template=" + data_files + "\\\n")
+                        f.write("xia2.ssx template=" + data_files + " \\\n")
                     else:
                         f.write("xia2.ssx image=" + data_files + " \\\n")
                     f.write(self.submit_file)
@@ -81,8 +81,9 @@ class run_xia2:
                         break
                     else:
                         if self.file_format == "cbf":
+                            chip_name = glob.glob(path + "/*00001.cbf")[0].split("/")[-1].split("_")[0]
                             for i in range(10):
-                                stills_arg = path + "/*" + str(i) + ".cbf"
+                                stills_arg = path + "/" + chip_name + "_####" + str(i) + ".cbf"
                                 data_tag = data_name[-1] + str(i)
                                 self.generate_xia2(stills_arg, data_tag)
                         elif self.file_format == "Select file format":
