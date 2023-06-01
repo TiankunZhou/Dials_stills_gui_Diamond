@@ -29,18 +29,20 @@ class tabs(tk.Frame):
     self.notebook = ttk.Notebook(self)
     
     #set up tabs using classes below; orders is very important, or it will not work
-    self.stills_process = stills_process(self.notebook)
+    self.config = config(self.notebook, )
+    self.stills_process = stills_process(self.notebook, self.config.cluster_option, self.config.file_format_option, self.config.dials_path)
     self.plot_stills = plot_stills(self.notebook)
     self.geo = geo(self.notebook)
-    self.scaling = scaling(self.notebook, self.stills_process.cluster_option_stills)
-    self.merging = merging(self.notebook, self.stills_process.cluster_option_stills)
+    self.scaling = scaling(self.notebook, self.config.cluster_option, self.config.dials_path)
+    self.merging = merging(self.notebook, self.config.cluster_option, self.config.dials_path)
     self.plot_merging = plot_merging(self.notebook)
-    self.xia2_processing = xia2_processing(self.notebook, self.stills_process.cluster_option_stills, self.stills_process.file_format_option)
+    self.xia2_processing = xia2_processing(self.notebook, self.config.cluster_option, self.config.file_format_option, self.config.dials_path)
     self.xia2_plot_process = xia2_plot_process(self.notebook)
-    self.xia2_merging = xia2_merging(self.notebook, self.stills_process.cluster_option_stills)
+    self.xia2_merging = xia2_merging(self.notebook, self.config.cluster_option, self.config.dials_path)
     self.xia2_merging_plot = xia2_merging_plot(self.notebook)
 
     #add tabs to the gui
+    self.notebook.add(self.config, text="Settings") 
     self.notebook.add(self.stills_process, text="Stills processing")
     self.notebook.add(self.plot_stills, text="Plot processing stat")
     self.notebook.add(self.geo, text="Geometry refinement")
@@ -54,9 +56,38 @@ class tabs(tk.Frame):
 
     self.notebook.pack()    
 
+#config/setting page
+class config(tk.Frame):
+  def __init__(self, master):
+    tk.Frame.__init__(self, master)
+
+    #file format
+    tk.Label(self, text="File format", font=("Arial", 15)).grid(row=0, column=0)
+    file_format_list = ["cbf", "h5 master", "h5 palxfel", "nxs"]
+    file_format = tk.StringVar(self)
+    file_format.set("Select file format")
+    file_format_choice = tk.OptionMenu(self, file_format, *file_format_list, command = lambda selected: plot.read_file_format(file_format.get())).grid(row=1, column=0)
+
+    #cluster option
+    tk.Label(self, text="Cluster option", font=("Arial", 15)).grid(row=2, column=0)
+    cluster_option_list = ["sge", "slurm EuXFEL"]
+    cluster_option = tk.StringVar(self)
+    cluster_option.set("sge")
+    cluster_choice = tk.OptionMenu(self, cluster_option, *cluster_option_list, command = lambda selected: plot.read_cluster_option(cluster_option.get())).grid(row=3, column=0)
+
+    #dials source file location
+    tk.Label(self, text="Dials source path (only for self-installed dials)", font=("Arial", 15)).grid(row=4, column=0)
+    dials_source_path = tk.Entry(self, width=60, font=("Aria", 15))
+    dials_source_path.insert(0, "/gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials")
+    dials_source_path.grid(row=5, column=0)
+    #make the options available to other classes
+    self.cluster_option = cluster_option
+    self.file_format_option = file_format
+    self.dials_path = dials_source_path
+
 #stills processing tab
 class stills_process(tk.Frame):
-  def __init__(self, master):
+  def __init__(self, master, cluster_option, file_format, dials_path):
     tk.Frame.__init__(self, master)
     ## Getting phil file
     tk.Label(self, text="Phil file stills", font=("Arial", 15)).grid(row=0, column=0)
@@ -94,25 +125,9 @@ class stills_process(tk.Frame):
     tk.Label(self, text="Process folder stills", font=("Arial", 15)).grid(row=2, column=1)
     process_folder_stills = tk.Entry(self, width=50, font=("Aria", 15))
     process_folder_stills.grid(row=3, column=1)
-    #file format
-    tk.Label(self, text="File format", font=("Arial", 15)).grid(row=0, column=2)
-    file_format_list = ["cbf", "h5 master", "h5 palxfel", "nxs"]
-    file_format = tk.StringVar(self)
-    file_format.set("Select file format")
-    file_format_choice = tk.OptionMenu(self, file_format, *file_format_list, command = lambda selected: plot.read_file_format(file_format.get())).grid(row=1, column=2)
-    #cluster option
-    tk.Label(self, text="Cluster option", font=("Arial", 15)).grid(row=2, column=2)
-    cluster_option_list = ["sge", "slurm EuXFEL"]
-    cluster_option = tk.StringVar(self)
-    cluster_option.set("sge")
-    cluster_choice = tk.OptionMenu(self, cluster_option, *cluster_option_list, command = lambda selected: plot.read_cluster_option(cluster_option.get())).grid(row=3, column=2)
-    #make the cluster option available to other classes
-    self.cluster_option_stills = cluster_option
-    #make the file format available for xia2
-    self.file_format_option = file_format
     #buttons
     tk.Button(self, text="Submit job", width =12, height=4,font=("Arial", 12), command = lambda: generate_and_process(file_format.get(), data_folder_stills.get("1.0","end").splitlines(), \
-    process_folder_stills.get(), cluster_option.get(), phil_file_stills.get("1.0","end")).submit_job()).grid(row=4, column=0)
+    process_folder_stills.get(), cluster_option.get(), phil_file_stills.get("1.0","end"), dials_path.get()).submit_job()).grid(row=4, column=0)
 
 #plot tab
 class plot_stills(tk.Frame):
@@ -184,7 +199,7 @@ class geo(tk.Frame):
      
 #scaling tab
 class scaling(tk.Frame):
-  def __init__(self, master, cluster_option_scaling):
+  def __init__(self, master, cluster_option, dials_path):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file scaling", font=("Arial", 15)).grid(row=0, column=0)
     #set default phil file
@@ -230,12 +245,12 @@ class scaling(tk.Frame):
     resolution_scaling.grid(row=5, column=0)
     #buttons
     tk.Button(self, text="Submit scaling job", width =12, height=4,font=("Arial", 12), command = lambda: scaling_job(data_folder_scaling.get("1.0","end").splitlines(), \
-    process_folder_scaling.get(), cluster_option_scaling.get(), phil_file_scaling.get("1.0","end"), sample_tag_scaling.get(), resolution_scaling.get(), ref_pdb_scaling.get()\
-    ).submit_job()).grid(row=8, column=0)
+    process_folder_scaling.get(), cluster_option.get(), phil_file_scaling.get("1.0","end"), sample_tag_scaling.get(), resolution_scaling.get(), ref_pdb_scaling.get(), \
+    dials_path.get()).submit_job()).grid(row=8, column=0)
 
 #merging tab
 class merging(tk.Frame):
-  def __init__(self, master, cluster_option_merging):
+  def __init__(self, master, cluster_option, dials_path):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Phil file merging", font=("Arial", 15)).grid(row=0, column=0)
     phil_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
@@ -277,8 +292,8 @@ class merging(tk.Frame):
     resolution_merging.grid(row=5, column=0)
     #buttons
     tk.Button(self, text="Submit merging job", width =14, height=4,font=("Arial", 12), command = lambda: merging_job(data_folder_merging.get("1.0","end").splitlines(), \
-    process_folder_merging.get(), cluster_option_merging.get(), phil_file_merging.get("1.0","end"), sample_tag_merging.get(), resolution_merging.get(), ref_pdb_merging.get()\
-    ).submit_job()).grid(row=6, column=0)
+    process_folder_merging.get(), cluster_option.get(), phil_file_merging.get("1.0","end"), sample_tag_merging.get(), resolution_merging.get(), ref_pdb_merging.get(), \
+    dials_path.get()).submit_job()).grid(row=6, column=0)
 
 #merging plot
 class plot_merging(tk.Frame):
@@ -309,7 +324,7 @@ class plot_merging(tk.Frame):
     plot_mergingstat(merging_dir.get("1.0","end").splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=3, column=0)
 
 class xia2_processing(tk.Frame):
-  def __init__(self, master, cluster_option_xia2, file_format):
+  def __init__(self, master, cluster_option, file_format, dials_path):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="Enter the ABSOLUTE path of the data dir", font=("Arial", 15)).grid(row=0, column=0)
     submit_file_xia2 = tk.Text(self, width=75, height=20, font=("Aria", 15))
@@ -336,7 +351,7 @@ class xia2_processing(tk.Frame):
     process_folder_xia2.grid(row=3, column=1)
     #buttons
     tk.Button(self, text="Submit job", width =12, height=4,font=("Arial", 12), command = lambda: run_xia2(file_format.get(), data_folder_xia2.get("1.0","end").splitlines(), \
-    process_folder_xia2.get(), cluster_option_xia2.get(), submit_file_xia2.get("1.0","end")).submit_xia2()).grid(row=4, column=0)
+    process_folder_xia2.get(), cluster_option.get(), submit_file_xia2.get("1.0","end"), dials_path.get()).submit_xia2()).grid(row=4, column=0)
 
 class xia2_plot_process(tk.Frame):
   def __init__(self, master):
@@ -344,7 +359,7 @@ class xia2_plot_process(tk.Frame):
     tk.Label(self, text="Under constrction", font=("Arial", 15)).grid(row=0, column=0)
 
 class xia2_merging(tk.Frame):
-  def __init__(self, master, cluster_option_merging):
+  def __init__(self, master, cluster_option, dials_path):
     tk.Frame.__init__(self, master)
     tk.Label(self, text="scaling/merging submit file (normally empty)", font=("Arial", 15)).grid(row=0, column=0)
     sbumit_file_merging = tk.Text(self, width=75, height=20, font=("Aria", 15))
@@ -367,7 +382,7 @@ class xia2_merging(tk.Frame):
     sample_tag_merging.grid(row=3, column=1)
     #buttons
     tk.Button(self, text="Submit xia2 merging job", width =16, height=4,font=("Arial", 12), command = lambda: merging_xia2(data_folder_merging.get("1.0","end").splitlines(), \
-    process_folder_merging.get(), cluster_option_merging.get(), sample_tag_merging.get(), sbumit_file_merging.get("1.0","end")).submit_xia2_merging()).grid(row=6, column=0)
+    process_folder_merging.get(), cluster_option.get(), sample_tag_merging.get(), sbumit_file_merging.get("1.0","end"), dials_path.get()).submit_xia2_merging()).grid(row=6, column=0)
 
 class xia2_merging_plot(tk.Frame):
   def __init__(self, master):

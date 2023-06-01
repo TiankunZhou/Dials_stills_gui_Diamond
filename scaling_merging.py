@@ -16,7 +16,7 @@ Sacling and merging settings
 """
 
 class scaling_job:
-    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
+    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str, dials_path:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
@@ -24,6 +24,7 @@ class scaling_job:
         self.tag = tag
         self.resolution = str(resolution)
         self.ref_pdb = ref_pdb
+        self.dials_path = dials_path
     
     def create_job(self, data_folder:str, process_name:str, run_name:str):
         processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
@@ -44,7 +45,7 @@ class scaling_job:
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
             if self.cluster_option == "sge":
                 with open(submit_script, "a") as f:
-                    f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
+                    f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
                     f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
@@ -58,7 +59,6 @@ class scaling_job:
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm EuXFEL":
-                print("Slurm under construction")
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
@@ -67,9 +67,10 @@ class scaling_job:
                                     #SBATCH --nodes=1                               # Number of nodes
                                     #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
-                    f.write("#SBATCH --job-name " + run_name + "\n")                                                                 
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                                
                     f.write("source /usr/share/Modules/init/bash \n")
-                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
@@ -96,7 +97,7 @@ class scaling_job:
                 print("Data processing folder not exist:" + line + " please check")
 
 class merging_job:
-    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str):
+    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str, dials_path:str):
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
@@ -104,6 +105,7 @@ class merging_job:
         self.tag = tag
         self.resolution = str(resolution)
         self.ref_pdb = ref_pdb
+        self.dials_path = dials_path
     
     def create_job(self, data_folder:str, process_name:str, run_name:str):
         processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
@@ -124,7 +126,7 @@ class merging_job:
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
             if self.cluster_option == "sge":
                 with open(submit_script, "a") as f:
-                    f.write("source /dls/science/users/tbf48622/dials_own/dials\n")
+                    f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
                     f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
@@ -140,7 +142,6 @@ class merging_job:
                 subprocess.call(command_merginglist, shell=True)
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm EuXFEL":
-                print("Slurm under construction")
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
@@ -149,9 +150,10 @@ class merging_job:
                                     #SBATCH --nodes=1                               # Number of nodes
                                     #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
-                    f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                                  
                     f.write("source /usr/share/Modules/init/bash \n")
-                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 

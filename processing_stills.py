@@ -23,12 +23,13 @@ class colors:
 
 class generate_and_process:
     """generate the procrssing files and submit the job"""
-    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str):
+    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, dials_path:str):
         self.file_format = file_format
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
         self.phil_file = phil_file
+        self.dials_path = dials_path
 
     def create_job(self, data_files:str, process_name:str):
         processing_folder = self.processing_dir + "/" + process_name
@@ -60,7 +61,6 @@ class generate_and_process:
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm EuXFEL":
-                print("under condtruction")
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
@@ -69,9 +69,10 @@ class generate_and_process:
                                     #SBATCH --nodes=2                               # Number of nodes
                                     #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
-                    f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                                 
                     f.write("source /usr/share/Modules/init/bash \n")
-                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
                 print(data_files)
 

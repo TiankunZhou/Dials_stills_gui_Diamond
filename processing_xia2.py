@@ -12,15 +12,15 @@ create and submit the xia2.ssx jobs
 """
 
 class run_xia2:
-    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, submit_file:str):
+    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, submit_file:str, dials_path:str):
         self.file_format = file_format
         self.data_dir = data_dir
         self.processing_dir = processing_dir
         self.cluster_option = cluster_option
         self.submit_file = submit_file
+        self.dials_path = dials_path
     
     def generate_xia2(self, data_files:str, process_name:str):
-        print("under construction")
         processing_folder = self.processing_dir + "/" + process_name
         submit_script = processing_folder + "/" + str("run_xia2_process_" + process_name + ".sh")
         print(colors.GREEN + colors.BOLD + "Submit jobs for: " + process_name + colors.ENDC)
@@ -49,7 +49,6 @@ class run_xia2:
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm EuXFEL":
-                print("under condtruction")
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
@@ -58,9 +57,10 @@ class run_xia2:
                                     #SBATCH --nodes=2                               # Number of nodes
                                     #SBATCH --output    dsp-%N-%j.out            # File to which STDOUT will be written
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
-                    f.write("#SBATCH --job-name " + process_name + "\n")                                                                 
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                              
                     f.write("source /usr/share/Modules/init/bash \n")
-                    f.write("source /gpfs/exfel/exp/SPB/202201/p002826/usr/Software/Tiankun/dials_test_conda3/dials \n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write(self.submit_file)
                 print(data_files)
 
@@ -71,7 +71,6 @@ class run_xia2:
                 #subprocess.call(command, cwd=processing_folder, shell=True)
 
     def submit_xia2(self):
-        print("under construction")
         for line in self.data_dir:
             if glob.glob(line):
                 for path in glob.glob(line):
