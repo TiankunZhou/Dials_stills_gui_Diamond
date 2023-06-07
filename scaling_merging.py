@@ -78,7 +78,7 @@ class scaling_job:
                 command = "sbatch " + submit_script
                 print("Running:", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                #subprocess.call(command, cwd=processing_folder, shell=True)
+                subprocess.call(command, cwd=processing_folder, shell=True)
     
     def submit_job(self):
         for line in self.data_dir:
@@ -163,7 +163,7 @@ class merging_job:
                 command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command_merginglist, shell=True)
-                #subprocess.call(command, shell=True)
+                subprocess.call(command, shell=True)
 
     
     def submit_job(self):

@@ -68,7 +68,7 @@ class run_xia2:
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                #subprocess.call(command, cwd=processing_folder, shell=True)
+                subprocess.call(command, cwd=processing_folder, shell=True)
 
     def submit_xia2(self):
         for line in self.data_dir:
