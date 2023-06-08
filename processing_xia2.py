@@ -59,7 +59,7 @@ class run_xia2:
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                              
-                    #f.write("source /usr/share/Modules/init/bash \n")
+                    f.write("source /usr/share/Modules/init/bash \n")
                     f.write("source " + self.dials_path + "\n")
                     f.write(self.submit_file)
                 print(data_files)
