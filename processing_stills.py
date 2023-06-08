@@ -71,7 +71,7 @@ class generate_and_process:
                                     #SBATCH --error     dsp-%N-%j.err            # File to which STDERR will be written \n"""))
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")                                                                 
-                    f.write("source /usr/share/Modules/init/bash \n")
+                    #f.write("source /usr/share/Modules/init/bash \n")
                     f.write("source " + self.dials_path + "\n")
                     f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
                 print(data_files)
