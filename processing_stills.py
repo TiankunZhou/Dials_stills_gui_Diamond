@@ -81,6 +81,24 @@ class generate_and_process:
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, cwd=processing_folder, shell=True)
+            elif self.cluster_option == "slurm SwissFEL":
+                with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --ntasks=1
+                                    #SBATCH --cpus-per-task=32                          
+                                    #SBATCH -p day \n"""))
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")  
+                    f.write("source " + self.dials_path + "\n")
+                    f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
+                print(data_files)
+
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = "sbatch " + submit_script
+                print("Running: ", command)
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command, cwd=processing_folder, shell=True)
 
     def submit_job(self):
         for line in self.data_dir:
