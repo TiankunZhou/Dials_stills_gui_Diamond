@@ -91,7 +91,7 @@ class generate_and_process:
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")  
                     f.write("source " + self.dials_path + "\n")
-                    f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
+                    f.write("dials.stills_process " + data_files + " " + phil + "\n")
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)

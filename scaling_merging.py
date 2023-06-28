@@ -84,12 +84,12 @@ class scaling_job:
                     f.write(dedent("""\
                                     #!/bin/bash
                                     #SBATCH --ntasks=1
-                                    #SBATCH --cpus-per-task=32                          
+                                    #SBATCH --cpus-per-task=20
                                     #SBATCH -p day \n"""))
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")  
                     f.write("source " + self.dials_path + "\n")
-                    f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
+                    f.write("mpirun -n 20 cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -187,12 +187,12 @@ class merging_job:
                     f.write(dedent("""\
                                     #!/bin/bash
                                     #SBATCH --ntasks=1
-                                    #SBATCH --cpus-per-task=32                          
+                                    #SBATCH --cpus-per-task=20
                                     #SBATCH -p day \n"""))
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")  
                     f.write("source " + self.dials_path + "\n")
-                    f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
+                    f.write("mpirun -n 20 cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
