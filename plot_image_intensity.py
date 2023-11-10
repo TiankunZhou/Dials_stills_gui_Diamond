@@ -9,6 +9,8 @@ import argparse
 import glob
 import csv
 from pandas import *
+import multiprocessing
+import time
 
 
 # input file path and parameters
@@ -59,19 +61,30 @@ def process_args():
         type = str,
         help = "out put file prefixed name, no extensions needed, default is same as the input file stem"
         )
+    
+    #cpu used
+    input_args.add_argument("-cpu","--cpu_use",
+        type=int,
+        help="set number of cpu used, default is 8",
+        default=8
+        )
+
     #save args
     args = input_args.parse_args()
 
 
     #setup saving default
-    if not args.output_dir:
-        args.output_dir= os.getcwd()
-        print(f"No output dir set using current working folder: {args.output_dir}")
+    if args.save_output == True:
+        if not args.output_dir:
+            args.output_dir= os.getcwd()
+            print(f"No output dir set using current working folder: {args.output_dir}")
 
-    if not args.output_prefix:
-        file_name = str(args.input_file[0].split("/")[-1])
-        args.output_prefix = file_name.split("_")[0]
-        print(f"No output prefix set using the input file name: {args.output_prefix}")
+        if not args.output_prefix:
+            file_name = str(args.input_file[0].split("/")[-1])
+            args.output_prefix = file_name.split("_")[0]
+            print(f"No output prefix set using the input file name: {args.output_prefix}")
+    else:
+        print(f"Not saving output, add -s if you want to save the csv")
 
     return args
 
@@ -87,40 +100,48 @@ def check_inputs(args:argparse.ArgumentParser):
         exit()
 
 
+def read_cbf(data:str, args=process_args()):
+    if glob.glob(data):
+        for path in glob.glob(data):
+            #get image number ONLY works for DLS-i24
+            file_name = Path(path).stem
+            image_number = int(file_name.split("_")[-1])
+
+            #get intensity
+            image = dxtbx.load(path)
+            i = image.get_raw_data()
+            i_array = i.as_numpy_array()
+            i_filter = np.where(i_array>args.high_threshold, 0, i_array)
+            i_sum = i_array.sum()
+            i_sum_filter = i_filter.sum()
+            i_diff = i_sum - i_sum_filter
+            if i_sum_filter < 0 :
+                i_sum_filter = 0
+            i_sum_filter_remove_chip = i_sum_filter - args.low_threshold
+            print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
+    return image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip
+
+
 def read_and_sum_intensities(args:argparse.ArgumentParser):
     image_intensity = {} #dictionary stors image number and intensity
     data = args.input_file
     #cbf files ONLY works af DLS-i24
     if args.data_format == "cbf":
-        for line in data:
-            if glob.glob(line):
-                for path in glob.glob(line):
-                    #get image number ONLY works for DLS-i24
-                    file_name = Path(path).stem
-                    image_number = int(file_name.split("_")[-1])
-
-                    #get intensity
-                    image = dxtbx.load(path)
-                    i = image.get_raw_data()
-                    i_array = i.as_numpy_array()
-                    i_filter = np.where(i_array>args.high_threshold, 0, i_array)
-                    i_sum = i_array.sum()
-                    i_sum_filter = i_filter.sum()
-                    i_sum_filter_remove_chip = i_sum_filter - args.low_threshold
-                    i_diff = i_sum - i_sum_filter
-                    if i_sum_filter < 0 :
-                        i_sum_filter = 0
-                    
-                    print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
-
-                    #add to dict
-                    image_intensity[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
+        with multiprocessing.Pool(args.cpu_use) as pool:
+            results = pool.imap_unordered(read_cbf, data)
+            #print(results)
+            pool.close()
+            pool.join()
+            #add to dict
+            for image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip in results:
+                image_intensity[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
     
     #h5 files
     elif args.data_format == "h5":
         print(f"h5 files ploting under construction")
         exit()
-    
+
+    #csv plot
     elif args.data_format == "csv":
         if Path(args.input_file[0]).suffix == ".csv":
             if len(args.input_file) == 1:
@@ -167,7 +188,7 @@ def plot_intensity(args, image_intensity:dict):
         #print(image_number, sum_intensity_filtered_chip_remove)
         #exit()
     else:
-        print(image_intensity)
+        #print(image_intensity)
         image_intensity_list = list(map(list, image_intensity.items()))
         image_intensity_list = sorted(image_intensity_list)
         for i in image_intensity_list:
@@ -219,12 +240,16 @@ def main():
     print(f"plot the sum of background intensities per image for Diamond cbf and other h5 files")
 
     #get the image:intensity dictionary
+    starttime = time.time()
     image_intens = read_and_sum_intensities(args)
+    #print(image_intens)
+    print('That took {} seconds'.format(time.time() - starttime))
 
     #save the file
     if args.save_output == True:
         save_output(args, image_intens)
 
+    #plot data
     plot_intensity(args, image_intens)
 
 if __name__ ==  "__main__" :
