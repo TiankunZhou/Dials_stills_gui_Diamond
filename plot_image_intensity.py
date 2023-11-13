@@ -69,6 +69,13 @@ def process_args():
         default=8
         )
 
+    #window size for moving average
+    input_args.add_argument("-ws","--window_size",
+        type=int,
+        help="set number of cpu used, default is 2",
+        default=2
+        )
+
     #save args
     args = input_args.parse_args()
 
@@ -99,6 +106,26 @@ def check_inputs(args:argparse.ArgumentParser):
         print(f"input format not recognised {args.data_format}, please give cbf, h5 or csv, exiting")
         exit()
 
+#calculate the moving average, with window size of 10
+def moving_average(args, dataset:dict):
+    moving_average = []
+    #print(dataset)
+    image_intensity_list = list(map(list, dataset.items()))
+    image_intensity_list = sorted(image_intensity_list)
+    image_intensity = [i[-1] for i in image_intensity_list]
+    window_size = args.window_size
+    for i in range(len(image_intensity)):
+        if i < len(image_intensity) - window_size + 1:
+            window = image_intensity[i:i+window_size]
+            #print(window)
+            window_average = round(sum(window)/len(window), 4)
+        elif i > len(image_intensity) - window_size + 1:
+            window = image_intensity[i:-1]
+            window_average = round(sum(window)/(len(image_intensity) - i), 5)
+        moving_average.append(window_average)
+    print(f"moving average: {moving_average}")
+    return moving_average
+
 
 def read_cbf(data:str, args=process_args()):
     if glob.glob(data):
@@ -123,7 +150,8 @@ def read_cbf(data:str, args=process_args()):
 
 
 def read_and_sum_intensities(args:argparse.ArgumentParser):
-    image_intensity = {} #dictionary stors image number and intensity
+    image_intensity_unordered = {} #dictionary stors image number and intensity
+    i_filtered_chip_unordered = {} #filtered and chip-removed intensity list for moving average
     data = args.input_file
     #cbf files ONLY works af DLS-i24
     if args.data_format == "cbf":
@@ -134,7 +162,16 @@ def read_and_sum_intensities(args:argparse.ArgumentParser):
             pool.join()
             #add to dict
             for image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip in results:
-                image_intensity[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
+                image_intensity_unordered[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
+                i_filtered_chip_unordered[image_number] = (i_sum_filter_remove_chip)
+            i_filtered_chip = dict(sorted(i_filtered_chip_unordered.items()))
+            image_intensity = dict(sorted(image_intensity_unordered.items()))
+            #print(sorted(i_filtered_chip_unordered.items()))
+            #print(i_filtered_chip)
+            i_moving_average = moving_average(args, i_filtered_chip)
+            for i, j in zip(image_intensity.keys(), range(len(i_moving_average))):
+                image_intensity[i].append(i_moving_average[j])
+
     
     #h5 files
     elif args.data_format == "h5":
@@ -143,6 +180,7 @@ def read_and_sum_intensities(args:argparse.ArgumentParser):
 
     #csv plot
     elif args.data_format == "csv":
+        image_intensity = {}
         if Path(args.input_file[0]).suffix == ".csv":
             if len(args.input_file) == 1:
                 pass
@@ -153,8 +191,9 @@ def read_and_sum_intensities(args:argparse.ArgumentParser):
             print(f"Please give csv file, current is {args.input_file[0]}")
             exit()
     
-    print(image_intensity)
+    print(print(image_intensity))
     return image_intensity
+
 
 def save_output(args, image_intensity:dict):
     #get values
@@ -162,17 +201,18 @@ def save_output(args, image_intensity:dict):
     image_intensity_list = list(map(list, image_intensity.items()))
     image_intensity_list = sorted(image_intensity_list)
     image_number = [i[0] for i in image_intensity_list]
-    sum_intensity_filtered_chip_remove = [i[1][-1] for i in image_intensity_list]
-    diff_intensity = [i[1][-2] for i in image_intensity_list]
     all_intensity = [i[1][0] for i in image_intensity_list]
     filtered_intensity = [i[1][1] for i in image_intensity_list]
+    diff_intensity = [i[1][2] for i in image_intensity_list]
+    sum_intensity_filtered_chip_remove = [i[1][3] for i in image_intensity_list]
+    image_moving_average = [i[1][4] for i in image_intensity_list]
 
     #save csv
     with open(output_file,"w", newline='') as output_csv:
         write_csv = csv.writer(output_csv, dialect="excel-tab")
-        write_csv.writerow(["Image_Number", "Total_Intensity", "Filtered_intensity", "Intensity_Difference", "Filtered_Intensity_Chip_scattering_removed"])
+        write_csv.writerow(["Image_Number", "Total_Intensity", "Filtered_intensity", "Intensity_Difference", "Filtered_Intensity_Chip_scattering_removed", "moving_average"])
         for i in range(len(image_number)):
-            write_csv.writerow([image_number[i], all_intensity[i], filtered_intensity[i], diff_intensity[i], sum_intensity_filtered_chip_remove[i]])
+            write_csv.writerow([image_number[i], all_intensity[i], filtered_intensity[i], diff_intensity[i], sum_intensity_filtered_chip_remove[i], image_moving_average[i]])
     output_csv.close()
 
     print(f"Spectra written to {output_file}")
@@ -185,8 +225,8 @@ def plot_intensity(args, image_intensity:dict):
         diff_intensity = data["Intensity_Difference"].tolist()
         all_intensity = data["Total_Intensity"].tolist()
         filtered_intensity = data["Filtered_intensity"].tolist()
-        #print(image_number, sum_intensity_filtered_chip_remove)
-        #exit()
+        image_moving_average = data["moving_average"].tolist()
+
     else:
         #print(image_intensity)
         image_intensity_list = list(map(list, image_intensity.items()))
@@ -194,33 +234,36 @@ def plot_intensity(args, image_intensity:dict):
         for i in image_intensity_list:
             print(i)
         image_number = [i[0] for i in image_intensity_list]
-        sum_intensity_filtered_chip_remove = [i[1][-1] for i in image_intensity_list]
-        diff_intensity = [i[1][-2] for i in image_intensity_list]
         all_intensity = [i[1][0] for i in image_intensity_list]
         filtered_intensity = [i[1][1] for i in image_intensity_list]
+        diff_intensity = [i[1][2] for i in image_intensity_list]
+        sum_intensity_filtered_chip_remove = [i[1][3] for i in image_intensity_list]
+        image_moving_average = [i[1][4] for i in image_intensity_list]
 
-    if max(sum_intensity_filtered_chip_remove) == 0:
+    """if max(sum_intensity_filtered_chip_remove) == 0:
         norm_intensity = sum_intensity_filtered_chip_remove
     else:
-        norm_intensity = [i/max(sum_intensity_filtered_chip_remove) for i in sum_intensity_filtered_chip_remove]
+        norm_intensity = [i/max(sum_intensity_filtered_chip_remove) for i in sum_intensity_filtered_chip_remove]"""
 
     #print(image_number, sum_intensity_filtered_chip_remove, norm_intensity)
 
     font = 12
     #plot all intensities
-    plt.figure("sum of intensities per image", figsize = (18, 10))
+    plt.figure(f"sum of intensities per image: {args.input_file[0]}", figsize = (18, 10))
     plt.subplot(311)
-    plt.scatter(image_number, sum_intensity_filtered_chip_remove, marker="o")
+    plt.plot(image_number, sum_intensity_filtered_chip_remove, marker="o")
     plt.ylabel("All intensities",fontsize=font,fontweight="bold")
     plt.xlabel("image number",fontsize=font)
     plt.title(f"All intensities",fontsize=16)
       
-    #plot normalized intensities (intensity/max_intensity)
+    #plot intensity with moving average (intensity/max_intensity)
     plt.subplot(312)
-    plt.scatter(image_number, norm_intensity, marker="o")
-    plt.ylabel("All intensities",fontsize=font,fontweight="bold")
+    plt.plot(image_number, sum_intensity_filtered_chip_remove, marker="o", label="All intensity")
+    plt.plot(image_number, image_moving_average, marker="o", label="Moving average")
+    plt.ylabel("All intensities and moving average",fontsize=font,fontweight="bold")
     plt.xlabel("image number",fontsize=font)
-    plt.title(f"Normalized intensities (intensity/max_intensity)",fontsize=16)
+    plt.legend()
+    plt.title(f"All intensities with moving average",fontsize=16)
 
     plt.subplot(313)
     plt.plot(image_number, all_intensity, marker="o",label="All intensity")
