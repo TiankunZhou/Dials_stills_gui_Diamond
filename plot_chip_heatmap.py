@@ -174,9 +174,9 @@ def plot_heatmaps(args):
         for block in block_assign:
             print(f"preparing: block {block[0]}, row {block[1]}, column {block[2]}")
             if block[0] == 0:
-                sns.heatmap(datalist[block[0]], cmap="RdYlGn", annot=False, cbar=True, cbar_ax=cbar_position, linewidths=0.01, linecolor='white', ax=axes[block[1],block[2]])
+                sns.heatmap(datalist[block[0]], cmap="RdYlGn", annot=False, cbar=True, cbar_ax=cbar_position, linewidths=0.01, linecolor='gray', ax=axes[block[1],block[2]])
             else:
-                sns.heatmap(datalist[block[0]], cmap="RdYlGn", annot=False, cbar=False, linewidths=0.01, linecolor='white', ax=axes[block[1],block[2]])
+                sns.heatmap(datalist[block[0]], cmap="RdYlGn", annot=False, cbar=False, linewidths=0.01, linecolor='gray', ax=axes[block[1],block[2]])
         fig.subplots_adjust(bottom=0.1, top=0.9, left=0.1, right=0.8, wspace=0.02, hspace=0.02)
 
     """ploting"""
