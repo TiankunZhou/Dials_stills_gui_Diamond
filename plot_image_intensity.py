@@ -12,6 +12,15 @@ from pandas import *
 import multiprocessing
 import time
 
+"""
+How to use:
+
+dials.python plot_image_intensity.py -i /dls/i24/data/2024/mx32727-20/emptychip/naomi/* -df cbf -ht 30 -s -c
+
+image number 0 maybe someting as a trigger, real data starts from image number 1
+Be careful when interpreted the data, as list position 0 = image 1
+solvent scattering to ~4A, leave the resolution to ~2.5A currently
+"""
 
 # input file path and parameters
 def process_args():
@@ -48,8 +57,9 @@ def process_args():
     #save output
     input_args.add_argument("-s","--save_output",
         action='store_true',  
-        help="Save image_intensity dictionary as csv file, default is true"
+        help="Save image_intensity dictionary as csv file, default is false"
         )
+        
     #output directory
     input_args.add_argument("-o", "--output_dir",
         type = str,
@@ -74,6 +84,11 @@ def process_args():
         type=int,
         help="set number of cpu used, default is 2",
         default=2
+        )
+    #whether use the central of the detector (as rectangular) for intensity sum
+    input_args.add_argument("-c","--centre_region",
+        action='store_true',
+        help="set whether using centre of the detector (~60%) for intensity calculatio, default is False",
         )
 
     #save args
@@ -136,16 +151,29 @@ def read_cbf(data:str, args=process_args()):
 
             #get intensity
             image = dxtbx.load(path)
-            i = image.get_raw_data()
-            i_array = i.as_numpy_array()
-            i_filter = np.where(i_array>args.high_threshold, 0, i_array)
-            i_sum = i_array.sum()
-            i_sum_filter = i_filter.sum()
+            i = image.get_raw_data() #get the intensity per pixel 
+            i_array = i.as_numpy_array() #convenrt the intensity per pixel as a 2-D np.array
+            i_filter = np.where(i_array>args.high_threshold, 0, i_array) #filter the potential bragg peaks based on the pixel intensity
+
+            #sum the intensity for whole and the centre of detector
+            if args.centre_region == True:
+                i_centre = i_array[424:2105, 492:1970]  # use the centre of the detector for intensity sum, as a rectangular
+                i_centre_filter = i_filter[424:2105, 492:1970]
+                i_sum = i_centre.sum()
+                i_sum_filter = i_centre_filter.sum()
+            else:
+                i_sum = i_array.sum()
+                i_sum_filter = i_filter.sum()
+            
             i_diff = i_sum - i_sum_filter
+
             if i_sum_filter < 0 :
                 i_sum_filter = 0
             i_sum_filter_remove_chip = i_sum_filter - args.low_threshold
-            print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
+            if image_number <= 0:
+                print(f"cbf image number: {image_number} is probabily a trigger image, real data starts feom image number: 1")
+            else:
+                print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
     return image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip
 
 
@@ -162,8 +190,9 @@ def read_and_sum_intensities(args:argparse.ArgumentParser):
             pool.join()
             #add to dict
             for image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip in results:
-                image_intensity_unordered[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
-                i_filtered_chip_unordered[image_number] = (i_sum_filter_remove_chip)
+                if image_number > 0:
+                    image_intensity_unordered[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
+                    i_filtered_chip_unordered[image_number] = (i_sum_filter_remove_chip)
             i_filtered_chip = dict(sorted(i_filtered_chip_unordered.items()))
             image_intensity = dict(sorted(image_intensity_unordered.items()))
             #print(sorted(i_filtered_chip_unordered.items()))
