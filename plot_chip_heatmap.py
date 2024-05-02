@@ -201,9 +201,9 @@ def plot_heatmaps(args):
         fig, axes = plt.subplots(nrows=8, ncols=8, sharex=True, sharey=True, figsize = (18, 10))
         cbar_position = fig.add_axes([.85, .3, .05, .4])
         #costumized color
-        colors_all = ["#56B4E9", "#EFEFF8", "#F0E442"]
-        colors_yes_no = ["#56B4E9", "#000000", "#F0E442"]
-        colors_match = ["#FFD700", "#000000", "#2D68C4"]
+        colors_all = ["#FFD700", "#F0E442", "#56B4E9", "#2D68C4"]
+        colors_yes_no = ["#FFD700", "#000000", "#2D68C4"]
+        colors_match = ["#F0E442", "#000000", "#56B4E9"]
         color_bar_all = matplotlib.colors.LinearSegmentedColormap.from_list("", colors_all)
 
         #vmin and vmax define the global min/max value.
