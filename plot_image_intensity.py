@@ -11,6 +11,7 @@ import csv
 from pandas import *
 import multiprocessing
 import time
+import h5py
 
 """
 How to use:
@@ -138,7 +139,7 @@ def moving_average(args, dataset:dict):
             window = image_intensity[i:-1]
             window_average = round(sum(window)/(len(image_intensity) - i), 5)
         moving_average.append(window_average)
-    print(f"moving average: {moving_average}")
+    #print(f"moving average: {moving_average}")
     return moving_average
 
 
@@ -171,10 +172,75 @@ def read_cbf(data:str, args=process_args()):
                 i_sum_filter = 0
             i_sum_filter_remove_chip = i_sum_filter - args.low_threshold
             if image_number <= 0:
-                print(f"cbf image number: {image_number} is probabily a trigger image, real data starts feom image number: 1")
+                print(f"cbf image number: {image_number} is probabily a trigger image, real data starts from image number: 1")
             else:
                 print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
     return image_number, i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip
+
+"""
+red h5 files, current olny work for h5 at PAL-XFEL with Rayonix detector
+"""
+#Get the file number of the first h5 file for combine datasets per chip
+def first_image_h5(data_list:list):
+    file_number_list = [] #combine intensiies of mutiple h5 files, if the data are split into several files
+    for path in data_list:
+        file_name = Path(path).stem
+        file_number = int(file_name)
+        file_number_list.append(file_number)
+    
+    file_number_sorted = sorted(file_number_list)
+    first_file_number = file_number_sorted[0]
+    print(file_number_sorted )
+
+    return first_file_number
+
+
+def read_h5(data:str, args=process_args()):
+    image_intensity_h5_unordered = {}
+    i_filtered_chip_h5_unordered = {}
+    first_file = first_image_h5(args.input_file)
+    if glob.glob(data):
+        for path in glob.glob(data):
+            #get the file stem name and the name of the first key in the h5 file and the data in h5
+            file_name = Path(path).stem
+            h5_main_key =  'R' + file_name[3:]
+            data_in_h5 = h5_main_key + '/scan_dat/raymx_data'
+            file_position = int(file_name) - first_file  #give the number of the file, for finding image numbers
+
+            #get image list with intensities pixel as list
+            file_h5 = h5py.File(path, "r")
+            image_list = list(file_h5[data_in_h5])
+
+            #get overall intensity per image
+            for index_number in range(len(image_list)):
+                image_number = int(index_number) + 1 + (file_position * 1000)
+                i = image_list[index_number] #get intensity per pixel as a 2d list
+                i_array = np.array(i)
+                i_filter = np.where(i_array>args.high_threshold, 0, i_array) #filter the potential bragg peaks based on the pixel intensity
+
+            #sum the intensity for whole and the centre of detector
+                if args.centre_region == True:
+                    i_centre = i_array[360:1080, 360:1080]  # use the centre of the detector for intensity sum, as a rectangular
+                    i_centre_filter = i_filter[360:1080, 360:1080]
+                    i_sum = i_centre.sum()
+                    i_sum_filter = i_centre_filter.sum()
+                else:
+                    i_sum = i_array.sum()
+                    i_sum_filter = i_filter.sum()
+                
+                i_diff = i_sum - i_sum_filter
+
+                if i_sum_filter < 0 :
+                    i_sum_filter = 0
+                i_sum_filter_remove_chip = i_sum_filter - args.low_threshold
+                if image_number <= 0:
+                    print(f"h5 image number: {image_number} is probabily a trigger image, real data starts from image number: 1")
+                else:
+                    print(f"image number: {image_number}; none_filterred intensity: {i_sum}; filtered intensity: {i_sum_filter}; intensity difference: {i_diff}")
+                image_intensity_h5_unordered[image_number] = [i_sum, i_sum_filter, i_diff, i_sum_filter_remove_chip]
+                i_filtered_chip_h5_unordered[image_number] = (i_sum_filter_remove_chip)
+    return image_intensity_h5_unordered, i_filtered_chip_h5_unordered
+
 
 
 def read_and_sum_intensities(args:argparse.ArgumentParser):
@@ -202,10 +268,25 @@ def read_and_sum_intensities(args:argparse.ArgumentParser):
                 image_intensity[i].append(i_moving_average[j])
 
     
-    #h5 files
+    #h5 files, currently only works for PAL-XFEL Rayonix data
     elif args.data_format == "h5":
-        print(f"h5 files ploting under construction")
-        exit()
+        with multiprocessing.Pool(args.cpu_use) as pool:
+            results = pool.imap_unordered(read_h5, data)
+            #print(results)
+            pool.close()
+            pool.join()
+            #add to dict
+            for image_intensity_h5_unordered, i_filtered_chip_h5_unordered in results:
+                    image_intensity_unordered.update(image_intensity_h5_unordered)
+                    i_filtered_chip_unordered.update(i_filtered_chip_h5_unordered)
+            i_filtered_chip = dict(sorted(i_filtered_chip_unordered.items()))
+            image_intensity = dict(sorted(image_intensity_unordered.items()))
+            #print(sorted(i_filtered_chip_unordered.items()))
+            #print(i_filtered_chip)
+            i_moving_average = moving_average(args, i_filtered_chip)
+            for i, j in zip(image_intensity.keys(), range(len(i_moving_average))):
+                image_intensity[i].append(i_moving_average[j])
+
 
     #csv plot
     elif args.data_format == "csv":
@@ -260,8 +341,8 @@ def plot_intensity(args, image_intensity:dict):
         #print(image_intensity)
         image_intensity_list = list(map(list, image_intensity.items()))
         image_intensity_list = sorted(image_intensity_list)
-        for i in image_intensity_list:
-            print(i)
+        #for i in image_intensity_list:
+            #print(i)
         image_number = [i[0] for i in image_intensity_list]
         all_intensity = [i[1][0] for i in image_intensity_list]
         filtered_intensity = [i[1][1] for i in image_intensity_list]
