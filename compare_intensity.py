@@ -9,6 +9,12 @@ import glob
 import csv
 from pandas import *
 
+"""
+compare two intensities and save the difference
+How to use:
+dias.python compare_intensity -i xxx1.csv xxx2.csv
+
+"""
 
 # input file path and parameters
 def process_args():
@@ -18,6 +24,24 @@ def process_args():
     input_args.add_argument("-i","--input_file",
         nargs="+",
         help="give the input files as list, give only csv files"
+        )
+        
+    #save output
+    input_args.add_argument("-s","--save_output",
+        action='store_true',  
+        help="Save image_intensity dictionary as csv file, default is false"
+        )
+
+    #output directory
+    input_args.add_argument("-o", "--output_dir",
+        type = str,
+        help = "out put directory, default is pwd",
+        )
+
+    #output file name prefix
+    input_args.add_argument("-p", "--output_prefix",
+        type = str,
+        help = "out put file prefixed name, no extensions needed, default is same as the input file stem"
         )
 
     #save args
