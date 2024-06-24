@@ -104,13 +104,14 @@ class generate_and_process:
 
             elif self.cluster_option == "condor":
                 with open(submit_script, "a") as f1:
+                    f1.write("#!/bin/bash" + "\n")
                     f1.write("source " + self.dials_path + "\n")
                     f1.write("dials.stills_process " + data_files + " " + phil_condor + " mp.nproc=20 " + "\n")
                 with open(condor_script, "a") as f2:
                     f2.write("request_cpus = 20 " + "\n")
                     f2.write("request_memory = 20000M " + "\n")
                     f2.write("executable = " + submit_script + "\n")
-                    f2.write("arguments =  input.phil" + "\n")
+                    f2.write("arguments = input.phil" + "\n")
                     f2.write("Requirements = (Machine != \"pal-wn1004.sdfarm.kr\") " + "\n")
                     f2.write("log = " + process_name + ".log" + "\n")
                     f2.write("error = " + process_name + ".err" + "\n")

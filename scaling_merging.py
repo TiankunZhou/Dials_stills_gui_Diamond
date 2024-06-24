@@ -104,13 +104,14 @@ class scaling_job:
 
             elif self.cluster_option == "condor":
                 with open(submit_script, "a") as f1:
+                    f1.write("#!/bin/bash" + "\n")
                     f1.write("source " + self.dials_path + "\n")
                     f1.write("mpirun -n ${1} cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 with open(condor_script, "a") as f2:
                     f2.write("request_cpus = 10 " + "\n")
                     f2.write("request_memory = 10000M " + "\n")
                     f2.write("executable = " + submit_script + "\n")
-                    f2.write("arguments =  10" + "\n")
+                    f2.write("arguments = 10" + "\n")
                     f2.write("Requirements = (Machine != \"pal-wn1004.sdfarm.kr\") " + "\n")
                     f2.write("log = " + process_name + ".log" + "\n")
                     f2.write("error = " + process_name + ".err" + "\n")
@@ -121,7 +122,7 @@ class scaling_job:
                 command = "condor_submit " + "-batch-name " + process_name + " " + condor_script 
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                #subprocess.call(command, cwd=processing_folder, shell=True)
+                subprocess.call(command, cwd=processing_folder, shell=True)
     
     def submit_job(self):
         for line in self.data_dir:
@@ -232,13 +233,14 @@ class merging_job:
 
             elif self.cluster_option == "condor":
                 with open(submit_script, "a") as f1:
+                    f1.write("#!/bin/bash" + "\n")
                     f1.write("source " + self.dials_path + "\n")
                     f1.write("mpirun -n ${1} cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 with open(condor_script, "a") as f2:
                     f2.write("request_cpus = 10 " + "\n")
                     f2.write("request_memory = 10000M " + "\n")
                     f2.write("executable = " + submit_script + "\n")
-                    f2.write("arguments =  10" + "\n")
+                    f2.write("arguments = 10" + "\n")
                     f2.write("Requirements = (Machine != \"pal-wn1004.sdfarm.kr\") " + "\n")
                     f2.write("log = " + process_name + ".log" + "\n")
                     f2.write("error = " + process_name + ".err" + "\n")
@@ -249,7 +251,7 @@ class merging_job:
                 command = "condor_submit " + "-batch-name " + process_name + " " + condor_script 
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                #subprocess.call(command, cwd=processing_folder, shell=True)
+                subprocess.call(command, cwd=processing_folder, shell=True)
 
 
     def submit_job(self):
