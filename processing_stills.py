@@ -34,7 +34,9 @@ class generate_and_process:
     def create_job(self, data_files:str, process_name:str):
         processing_folder = self.processing_dir + "/" + process_name
         submit_script = processing_folder + "/" + str("run_" + process_name + ".sh")
+        condor_script = processing_folder + "/" + str("condor_" + process_name + ".sh") #this is only for condor at PAL-XFEL
         phil = processing_folder + "/" + "input.phil"
+        phil_condor = processing_folder + "/" + "${1}" #only for condor jobs
         print(colors.GREEN + colors.BOLD + "Submit jobs for: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
             print(colors.BLUE + colors.BOLD + "dataset " + process_name + " is processing or has been processed, please check the foled: " + processing_folder + colors.ENDC)
@@ -96,6 +98,27 @@ class generate_and_process:
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
+                print("Running: ", command)
+                #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+                subprocess.call(command, cwd=processing_folder, shell=True)
+
+            elif self.cluster_option == "condor":
+                with open(submit_script, "a") as f1:
+                    f1.write("source " + self.dials_path + "\n")
+                    f1.write("dials.stills_process " + data_files + " " + phil_condor + " mp.nproc=20 " + "\n")
+                with open(condor_script, "a") as f2:
+                    f2.write("request_cpus = 20 " + "\n")
+                    f2.write("request_memory = 20000M " + "\n")
+                    f2.write("executable = " + submit_script + "\n")
+                    f2.write("arguments =  input.phil" + "\n")
+                    f2.write("Requirements = (Machine != \"pal-wn1004.sdfarm.kr\") " + "\n")
+                    f2.write("log = " + process_name + ".log" + "\n")
+                    f2.write("error = " + process_name + ".err" + "\n")
+                    f2.write("output = " + process_name + ".out" + "\n")
+                    f2.write("queue" + "\n")
+                
+                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                command = "condor_submit " + "-batch-name " + process_name + " " + condor_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, cwd=processing_folder, shell=True)

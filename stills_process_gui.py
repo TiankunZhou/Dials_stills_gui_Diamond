@@ -70,7 +70,7 @@ class config(tk.Frame):
 
     #cluster option
     tk.Label(self, text="Cluster option", font=("Arial", 15)).grid(row=2, column=0)
-    cluster_option_list = ["sge", "slurm EuXFEL", "slurm SwissFEL"]
+    cluster_option_list = ["sge", "slurm EuXFEL", "slurm SwissFEL", "condor"]
     cluster_option = tk.StringVar(self)
     cluster_option.set("sge")
     cluster_choice = tk.OptionMenu(self, cluster_option, *cluster_option_list, command = lambda selected: plot.read_cluster_option(cluster_option.get())).grid(row=3, column=0, pady=(0, 10))
