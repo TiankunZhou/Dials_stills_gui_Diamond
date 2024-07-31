@@ -45,19 +45,22 @@ class scaling_job:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
-            if self.cluster_option == "sge":
+            if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --ntasks=10
+                                    #SBATCH --time=40:00:00
+                                    #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
-                    f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                    f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-                command = [
-                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                        + "medium.q "
-                        + submit_script
-                    ]
-                print("Running:", " ".join(command))
+                command = "sbatch " + submit_script
+                print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, shell=True)
 
@@ -91,7 +94,7 @@ class scaling_job:
                                     #SBATCH --cpus-per-task=20
                                     #SBATCH -p day \n"""))
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
-                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")  
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("source " + self.dials_path + "\n")
                     f.write("mpirun -n 20 cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
@@ -170,19 +173,22 @@ class merging_job:
                 p.write("input.path=" + data_folder + "\n")
                 p.write(self.phil_file)
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
-            if self.cluster_option == "sge":
+            if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --ntasks=10
+                                    #SBATCH --time=40:00:00
+                                    #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
-                    f.write("mpirun -n ${NSLOTS} cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                    f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-                command = [
-                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                        + "medium.q "
-                        + submit_script
-                    ]
-                print("Running:", " ".join(command))
+                command = "sbatch " + submit_script
+                print("Running: ", command)
                 command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command_merginglist, shell=True)

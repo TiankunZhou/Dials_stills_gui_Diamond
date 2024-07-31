@@ -29,8 +29,15 @@ class run_xia2:
         else:
             if not os.path.isdir(processing_folder):
                 os.makedirs(processing_folder)
-            if self.cluster_option == "sge":
+            if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
+                    f.write(dedent("""\
+                                    #!/bin/bash
+                                    #SBATCH --ntasks=40
+                                    #SBATCH --time=40:00:00
+                                    #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --chdir " + processing_folder + "\n")
+                    f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("module load dials/latest\n")
                     if self.file_format == "cbf":
                         f.write("xia2.ssx template=" + data_files + " \\\n")
@@ -40,12 +47,8 @@ class run_xia2:
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-                command = [
-                        "module load global/cluster && qsub -j y -wd " + processing_folder + " -pe smp 20 -l redhat_release=rhel7 -l m_mem_free=3G -q "
-                        + "medium.q "
-                        + submit_script
-                    ]
-                print("Running:", " ".join(command))
+                command = "sbatch " + submit_script
+                print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm EuXFEL":
