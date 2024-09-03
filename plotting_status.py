@@ -336,6 +336,12 @@ class plot:
 
   def read_merging_stats(option):
     print("plot merging_stats: " + option)
+  
+  def read_composite(option):
+    print(f"composite output: {option}")
+
+  def read_all_output(option):
+    print(f"output all files: {option}")
 
   def dot(option, dir):
     if option == "single":

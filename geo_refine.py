@@ -9,14 +9,17 @@ import time
 Geometry refinement based on dials.refine
 """
 class geometry_refinement():
-    def __init__(self, data_dir:list, output_dir:str, phil_file:str):
-        self.data_dir = data_dir
-        self.output_dir = output_dir
-        self.phil_file = phil_file
+    def __init__(self, **kwargs):
+        self.data_dir = kwargs["data_dir"]
+        self.output = kwargs["output_dir"]
+        self.output_dir = kwargs["output_dir"] + "/geo_refinement/" + kwargs["tag_geo"]
+        self.phil_file = kwargs["phil_file"]
 
     def combine(self):
         #os.chdir(self.output_dir)
         #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
+        if not os.path.isdir(self.output_dir):
+            os.makedirs(self.output_dir)
         print(colors.RED + colors.BOLD + "Geometry refinement starts. Please do not touch the GUI until the job is finished" + colors.ENDC)
         command_combine = "dials.combine_experiments " + self.data_dir + "/*refined.expt " + self.data_dir + "/*indexed.refl " + "reference_from_experiment.detector=0 " + "n_subset=2000"
         print("Combine command: " + command_combine)
@@ -78,6 +81,8 @@ class geometry_refinement():
             if os.path.isfile(self.output_dir + "/refine.phil"):
                 print(colors.RED + colors.BOLD + "Refinement job has done, please check: " + self.output_dir + colors.ENDC)
                 print(colors.RED + colors.BOLD + "Or you can remove the files in: " + self.output_dir + " and re-submit the job" + colors.ENDC)
+            elif self.output == "Please select output folder":
+                print(colors.BLUE + colors.BOLD + "Please specify a processing folder" + colors.ENDC)
             else:
                 if not self.data_dir == "" and not self.output_dir == "":
                     self.combine()
@@ -92,10 +97,13 @@ class geometry_refinement():
         except:
             print ("dials not found, please check")
         else:
-            if not self.output_dir == "":
-                self.compare()
+            if self.output == "Please select output folder":
+                print(colors.BLUE + colors.BOLD + "Please specify a processing folder" + colors.ENDC)
             else:
-                print("processing dir is not given, please check")
+                if not self.output_dir == "":
+                    self.compare()
+                else:
+                    print("processing dir is not given, please check")
 
 
 

@@ -16,18 +16,19 @@ Sacling and merging settings
 """
 
 class scaling_job:
-    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str, dials_path:str):
-        self.data_dir = data_dir
-        self.processing_dir = processing_dir
-        self.cluster_option = cluster_option
-        self.phil_file = phil_file
-        self.tag = tag
-        self.resolution = str(resolution)
-        self.ref_pdb = ref_pdb
-        self.dials_path = dials_path
+    def __init__(self, **kwargs):
+        self.data_dir = kwargs["data_dir"]
+        self.processing_dir = kwargs["output_dir"]
+        self.cluster_option = kwargs["cluster_option"]
+        self.phil_file = kwargs["phil_file_scaling"]
+        self.tag = kwargs["sample_tag_scaling"]
+        self.resolution = str(kwargs["resolution_scaling"])
+        self.ref_pdb = kwargs["ref_pdb_scaling"]
+        self.dials_path = kwargs["dials_path"]
+        self.cpu_diamond_scaling = kwargs["cpu_diamond_scaling"]
     
     def create_job(self, data_folder:str, process_name:str, run_name:str):
-        processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
+        processing_folder = self.processing_dir + "/scaling/" + process_name + "/" + run_name
         submit_script = processing_folder + "/" + str("run_scaling_" + process_name + ".sh")
         condor_script = processing_folder + "/" + str("condor_" + process_name + ".sh") #this is only for condor at PAL-XFEL
         phil = processing_folder + "/" + "scaling.phil"
@@ -49,12 +50,12 @@ class scaling_job:
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
-                                    #SBATCH --ntasks=10
                                     #SBATCH --time=40:00:00
                                     #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --ntasks=" + self.cpu_diamond_scaling + "\n")
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
-                    f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
@@ -129,7 +130,9 @@ class scaling_job:
     
     def submit_job(self):
         for line in self.data_dir:
-            if glob.glob(line):
+            if line == "":
+                pass
+            elif glob.glob(line):
                 for path in glob.glob(line):
                     data_name = path.strip("\n").split("/")
                     if not data_name[-1]:
@@ -144,18 +147,19 @@ class scaling_job:
                 print("Data processing folder not exist:" + line + " please check")
 
 class merging_job:
-    def __init__(self, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, tag:str, resolution:float, ref_pdb:str, dials_path:str):
-        self.data_dir = data_dir
-        self.processing_dir = processing_dir
-        self.cluster_option = cluster_option
-        self.phil_file = phil_file
-        self.tag = tag
-        self.resolution = str(resolution)
-        self.ref_pdb = ref_pdb
-        self.dials_path = dials_path
+    def __init__(self, **kwargs):
+        self.data_dir = kwargs["data_dir"]
+        self.processing_dir = kwargs["output_dir"]
+        self.cluster_option = kwargs["cluster_option"]
+        self.phil_file = kwargs["phil_file_merging"]
+        self.tag = kwargs["sample_tag_merging"]
+        self.resolution = str(kwargs["resolution_merging"])
+        self.ref_pdb = kwargs["ref_pdb_merging"]
+        self.dials_path = kwargs["dials_path"]
+        self.cpu_diamond_merging = kwargs["cpu_diamond_merging"]
     
     def create_job(self, data_folder:str, process_name:str, run_name:str):
-        processing_folder = self.processing_dir + "/" + process_name + "/" + run_name
+        processing_folder = self.processing_dir + "/merging/" + process_name + "/" + run_name
         submit_script = processing_folder + "/" + str("run_merging_" + process_name + ".sh")
         condor_script = processing_folder + "/" + str("condor_" + process_name + ".sh") #this is only for condor at PAL-XFEL
         phil = processing_folder + "/" + "merging.phil"
@@ -170,28 +174,40 @@ class merging_job:
             if os.path.exists(phil):
                 os.remove(phil)
             with open(phil, "a") as p:
-                p.write("input.path=" + data_folder + "\n")
+                for line in data_folder:
+                    if line == "":
+                        pass
+                    elif glob.glob(line):
+                        for path in glob.glob(line):
+                            data_name = path.strip("\n").split("/")
+                            if not data_name[-1]:
+                                print('make sure there is no "/" at the end of the file path')
+                                break
+                            else:
+                                p.write("input.path=" + str(path) + "\n")
+                    else:
+                        print("Data scaling folder not exist:" + line + " please check")
                 p.write(self.phil_file)
             change_phil(phil, self.resolution, prefix, self.ref_pdb)
             if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
-                                    #SBATCH --ntasks=10
                                     #SBATCH --time=40:00:00
                                     #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --ntasks=" + self.cpu_diamond_merging + "\n")
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
-                    f.write("source /dls/science/users/tbf48622/dials_dev_update_test/dials\n")
+                    f.write("source " + self.dials_path + "\n")
                     f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
-                command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+                #command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                subprocess.call(command_merginglist, shell=True)
+                #subprocess.call(command_merginglist, shell=True)
                 subprocess.call(command, shell=True)
 
             elif self.cluster_option == "slurm EuXFEL":
@@ -213,9 +229,9 @@ class merging_job:
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running:", command)
-                command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
+                #command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
-                subprocess.call(command_merginglist, shell=True)
+                #subprocess.call(command_merginglist, shell=True)
 
                 subprocess.call(command, shell=True)
             elif self.cluster_option == "slurm SwissFEL":
@@ -261,30 +277,21 @@ class merging_job:
 
 
     def submit_job(self):
-        for line in self.data_dir:
-            if glob.glob(line):
-                data_name = line.strip("\n").split("/")
-                if not data_name[-1]:
-                    print('make sure there is no "/" at the end of the file path')
-                    break
-                else:
-                    data_tag = self.tag
-                    data_folder = str(line)
-                    if not os.path.isdir(self.processing_dir + "/" + data_tag + "/"):
-                        version = 0 
-                    else:
-                        folder_list = [f.name for f in os.scandir(self.processing_dir + "/" + data_tag + "/") if f.is_dir()]
-                        lastchara_list = [n[1:] for n in folder_list]
-                        version_list = [b for b in lastchara_list if b.isdigit()]
-                        if not version_list:
-                            version = 0
-                        else:
-                            version = int(max(version_list)) + 1
-                    run_name = "v" + str('{0:03}'.format(version))
-                    print(colors.BLUE + colors.BOLD + "merging version: " + run_name + colors.ENDC)
-                    self.create_job(data_folder, data_tag, run_name)
+        data_tag = self.tag
+        if not os.path.isdir(self.processing_dir + "/merging/" + data_tag + "/"):
+            version = 0 
+        else:
+            folder_list = [f.name for f in os.scandir(self.processing_dir + "/merging/" + data_tag + "/") if f.is_dir()]
+            lastchara_list = [n[1:] for n in folder_list]
+            version_list = [b for b in lastchara_list if b.isdigit()]
+            if not version_list:
+                version = 0
             else:
-                print("Data scaling folder not exist:" + line + " please check")
+                version = int(max(version_list)) + 1
+        run_name = "v" + str('{0:03}'.format(version))
+        print(colors.BLUE + colors.BOLD + "merging version: " + run_name + colors.ENDC)
+        self.create_job(self.data_dir, data_tag, run_name)
+
 
 
 

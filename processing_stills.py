@@ -23,41 +23,75 @@ class colors:
 
 class generate_and_process:
     """generate the procrssing files and submit the job"""
-    def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, dials_path:str):
-        self.file_format = file_format
-        self.data_dir = data_dir
-        self.processing_dir = processing_dir
-        self.cluster_option = cluster_option
-        self.phil_file = phil_file
-        self.dials_path = dials_path
+    #def __init__(self, file_format:str, data_dir:list, processing_dir:str, cluster_option:str, phil_file:str, dials_path:str, cpu_diamond_processing:str):
+    def __init__(self, **kwargs):
+        #print(kwargs)
+        self.file_format = kwargs["file_format"]
+        self.data_dir = kwargs["data_dir"]
+        self.processing_dir = kwargs["processing_dir"]
+        self.sample_tag = kwargs["sample_tag"]
+        self.cluster_option = kwargs["cluster_option"]
+        self.geom = kwargs["geom"]
+        self.mask = kwargs["mask"]
+        self.min_spot_size = kwargs["min_spot_size"]
+        self.max_spot_size = kwargs["max_spot_size"]
+        self.resolution = kwargs["resolution"]
+        self.space_group = kwargs["space_group"]
+        self.unit_cell = kwargs["unit_cell"]
+        self.phil_file_extra = kwargs["phil_file_extra"]
+        self.composite = kwargs["composite"]
+        self.ouput_all = kwargs["output_all"]
+        self.dials_path = kwargs["dials_path"]
+        self.cpu_diamond_processing = kwargs["cpu_diamond_processing"]
 
     def create_job(self, data_files:str, process_name:str):
-        processing_folder = self.processing_dir + "/" + process_name
+        processing_folder = self.processing_dir + "/stills_processing/" + self.sample_tag + "/" + process_name
         submit_script = processing_folder + "/" + str("run_" + process_name + ".sh")
         condor_script = processing_folder + "/" + str("condor_" + process_name + ".sh") #this is only for condor at PAL-XFEL
         phil = processing_folder + "/" + "input.phil"
         phil_condor = processing_folder + "/" + "${1}" #only for condor jobs
         print(colors.GREEN + colors.BOLD + "Submit jobs for: " + process_name + colors.ENDC)
+        print(colors.GREEN + colors.BOLD + "Generate phil file: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
             print(colors.BLUE + colors.BOLD + "dataset " + process_name + " is processing or has been processed, please check the foled: " + processing_folder + colors.ENDC)
+        elif self.processing_dir == "Please select output folder":
+            print(colors.BLUE + colors.BOLD + "Please specify a processing folder" + colors.ENDC)
         else:
+            #create phil file based on gui settings:
             if not os.path.isdir(processing_folder):
                 os.makedirs(processing_folder)
             if os.path.exists(phil):
                 os.remove(phil)
             with open(phil, "a") as p:
-                p.write(self.phil_file)
+                if self.geom.endswith(".expt"):
+                    p.write(f"input.reference_geometry={self.geom} \n")
+                if self.mask.endswith(".mask"):
+                    p.write(f"spotfinder.lookup.mask={self.mask} \n")
+                    p.write(f"integration.lookup.mask={self.mask} \n\n\n")
+                p.write(f"spotfinder.filter.min_spot_size={self.min_spot_size} \nspotfinder.filter.max_spot_size={self.max_spot_size} \n")
+                p.write(f"spotfinder.filter.d_min={self.resolution} \n\n\n")
+                if self.cluster_option == "slurm Diamond":
+                    p.write(f"mp.nproc={self.cpu_diamond_processing} \nmp.method=multiprocessing \n\n\n")
+                p.write(f"indexing.known_symmetry.space_group={self.space_group} \nindexing.known_symmetry.unit_cell={self.unit_cell} \n\n\n")
+                p.write(self.phil_file_extra)
+                if self.composite == "no":
+                    p.write(f"output.composite_output=False \n")
+                if self.ouput_all == "yes":
+                    p.write(f"output.experiments_filename=%s_imported.expt \noutput.strong_filename=%s_strong.refl \n\n\n")
             if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
                                     #!/bin/bash
-                                    #SBATCH --ntasks=40
                                     #SBATCH --time=40:00:00
                                     #SBATCH --partition=cs04r  \n"""))
+                    f.write("#SBATCH --ntasks=" + self.cpu_diamond_processing + "\n")
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("module load dials/latest\n")
-                    f.write("dials.stills_process " + data_files + " " + phil + "\n")
+                    if self.file_format == "cbf":
+                        f.write("dials.stills_process input.glob=" + data_files + " " + phil + "\n")
+                    else:
+                        f.write("dials.stills_process " + data_files + " " + phil + "\n")
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -137,10 +171,9 @@ class generate_and_process:
                         break
                     else:
                         if self.file_format == "cbf":
-                            for i in range(10):
-                                stills_arg = path + "/*" + str(i) + ".cbf"
-                                data_tag = data_name[-1] + str(i)
-                                self.create_job(stills_arg, data_tag)
+                            stills_arg = path + "/*" + ".cbf"
+                            data_tag = data_name[-1]
+                            self.create_job(stills_arg, data_tag)
                         elif self.file_format == "Select file format":
                             print("Please select data format")
                         elif self.file_format == "h5 palxfel":
@@ -157,7 +190,8 @@ class generate_and_process:
                             self.create_job(stills_arg, data_tag)
                         else:
                             print("Unknown format, please check")
-            
+            elif line == "":
+                pass
             else:
                 print("Some data folder not exist in:" + line + " please check")
 
