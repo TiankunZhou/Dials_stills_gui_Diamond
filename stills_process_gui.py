@@ -611,7 +611,7 @@ class plot_merging(tk.Frame):
     tk.Frame.__init__(self, master)
 
     #plot merging
-    tk.Label(self, text="Plot merging stats), ONE DIR only", font=("Arial", 18)).grid(row=0, column=2,pady=(0, 20))
+    tk.Label(self, text="Plot and compare merging stats", font=("Arial", 18)).grid(row=0, column=2,pady=(0, 20))
     
     """
     #merging dir (Text)
@@ -647,13 +647,27 @@ class plot_merging(tk.Frame):
     stats_2.set("Multiplicity")
     stats_2_choice = tk.OptionMenu(self, stats_2, *stats_2_list, command = lambda selected: plot.read_merging_stats(stats_2.get())).grid(row=4, column=3)
 
+    #multiple merging dir for comparison
+    tk.Label(self, text="merging dirs for comparison (absolute path)", font=("Arial", 15)).grid(row=6, column=2)
+    merging_dir_multiple = tk.Text(self, width=70, height=15, font=("Aria", 15))
+    merging_dir_multiple.grid(row=8, column=1, columnspan=4, pady=(0, 10), sticky="we")
+
+    #select folder button
+    tk.Button(self, text="Select all data \nprocessing sub-folder(s)", width =18, height=2,font=("Arial", 12), \
+              command = lambda:folder_content_folder(merging_dir_multiple)).grid(row=7, column=1, padx=(5, 0), pady=(0, 5), sticky="e")
+    tk.Button(self, text="Add a data \nprocessing folder", width =18, height=2,font=("Arial", 12), \
+              command = lambda: add_folder_textbox(merging_dir_multiple)).grid(row=7, column=3, padx=(5, 0), pady=(0, 5), sticky="e")
+
     #give weight to extra columns, to make the widgets at the center
     self.grid_columnconfigure([0, 5], weight=1)
     self.grid_columnconfigure([1, 2, 3, 4], weight=4)
 
     #button
     tk.Button(self, text="Plot merging stats", width =16, height=2,font=("Arial", 12), command = lambda: \
-    plot_mergingstat(merging_dir.get().splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=6, column=2, pady=(50, 0))
+    plot_mergingstat(merging_dir.get().splitlines()).plot_stats(stats_1.get(), stats_2.get())).grid(row=5, column=2, pady=(50, 0))
+
+    tk.Button(self, text="compare merging stats", width =16, height=2,font=("Arial", 12), command = lambda: \
+    plot_mergingstat(merging_dir_multiple.get("1.0", "end").splitlines()).compare_merging_stat(stats_1.get(), stats_2.get())).grid(row=9, column=2, pady=(50, 0))
 
 
 class xia2_processing(tk.Frame):

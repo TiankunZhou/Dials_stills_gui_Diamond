@@ -219,6 +219,77 @@ class plot_mergingstat:
             else:
                 print(colors.RED + colors.BOLD + "merging log file not exist: " + str(line) + " Pleace check" + colors.ENDC)
         plt.show()
+
+    
+    def compare_merging_stat(self, value1:str, value2:str):
+        #create lists for the plot
+        value_1_list = []
+        value_2_list = []
+        resolution_list = []
+        data_name_list = []
+
+        #fill the list
+        for line in self.data_dir:
+            if line == "":
+                pass
+            elif glob.glob(os.path.join(line, "*main*")):
+                for file_name in glob.glob(os.path.join(line, "*main*")):
+                    #create a list of data name
+                    data_name_split = file_name.strip("\n").split("/")
+                    data_name = f"{data_name_split[-3]} - {data_name_split[-2]}"
+                    data_name_list.append(data_name)
+
+                    #generate lists of values and resolution
+                    table_intensity, value_intensity, _ = self.extract_intensity(file_name)
+                    table_scaling, value_scaling, _ = self.extract_scaling(file_name) # _ is the blank identifier
+                    resolution, stats_1, stats_2, stats_overall_1, stats_overall_2 = self.extract_stats(file_name, value1, value2)
+                    print("Intensity statistic table for " + colors.BLUE + colors.BOLD + str(file_name) + ": " + colors.ENDC)
+                    print("\n".join(table_intensity))
+                    print("Scaling statistics table for " + colors.BLUE + colors.BOLD + str(file_name) + ": " + colors.ENDC)
+                    print("\n".join(table_scaling))
+
+                    resolution_float = [float(x) for x in resolution]
+                    resolution_list.append(resolution_float)
+                    stats_float_1 = [float(x) for x in stats_1]
+                    value_1_list.append(stats_float_1 )
+                    stats_float_2 = [float(x) for x in stats_2] #use these three to change the items in the list from str to float for plotting
+                    value_2_list.append(stats_float_2)
+            else:
+                print(colors.RED + colors.BOLD + "merging log file not exist: " + str(line) + " Pleace check" + colors.ENDC)
+                
+
+        #check length of lists
+        list_length = len(data_name_list)
+        #print(list_length)
+        if len(resolution_list) == list_length and len(value_1_list) == list_length and len(value_2_list) == list_length:
+            pass
+        else:
+            print("lists length are not the same")
+
+        #plot 
+        image, (plot1, plot2) = plt.subplots(2, 1, figsize = (22, 12))
+        #plt.figure(f"compare merging stats", figsize = (22, 12))
+        plot1.set_title(f"Compare merging stats: {str(value1)}",fontsize=16)
+        for i in range(list_length):
+            plot1.plot(resolution_list[i], value_1_list[i], marker="o", label=f"{data_name_list[i]}")
+        plot1.set_ylabel(str(value1),fontsize=14,fontweight="bold")
+        plot1.set_xlabel("resolution",fontsize=14)
+        plot1.invert_xaxis()
+        plot1.legend()
+        #plt.title(f"Compare merging stats: {str(value1)}",fontsize=16)
+  
+        #plot value 2
+        #plt.subplot(212)
+        plot2.set_title(f"Compare merging stats: {str(value2)}",fontsize=16)
+        for i in range(list_length):
+            plot2.plot(resolution_list[i], value_2_list[i], marker="o", label=f"{data_name_list[i]}")
+        plot2.set_ylabel(str(value2),fontsize=14,fontweight="bold")
+        plot2.set_xlabel("resolution",fontsize=14)
+        plot2.invert_xaxis()
+        plot2.legend()
+        #plt.title(f"Compare merging stats: {str(value2)}",fontsize=16)
+        plt.show()
+
    
        
 

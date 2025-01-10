@@ -56,7 +56,7 @@ class scaling_job:
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("source " + self.dials_path + "\n")
-                    f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                    f.write("mpirun -n " + self.cpu_diamond_scaling + " cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
@@ -199,7 +199,7 @@ class merging_job:
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
                     f.write("source " + self.dials_path + "\n")
-                    f.write("mpirun -n 10 cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
+                    f.write("mpirun -n " + self.cpu_diamond_merging + " cctbx.xfel.merge " + phil + " mp.method=mpi\n")
                 print(phil)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
