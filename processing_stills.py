@@ -166,30 +166,33 @@ class generate_and_process:
             if glob.glob(line):
                 for path in glob.glob(line):
                     data_name = path.strip("\n").split("/")
-                    if not data_name[-1]:
-                        print('make sure there is no "/" at the end of the file path')
-                        break
-                    else:
-                        if self.file_format == "cbf":
-                            stills_arg = path + "/*" + ".cbf"
-                            data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
-                        elif self.file_format == "Select file format":
-                            print("Please select data format")
-                        elif self.file_format == "h5 palxfel":
-                            stills_arg = path + "/*." + "h5"
-                            data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
-                        elif self.file_format == "h5 master":
-                            stills_arg = path + "/*master." + "h5"
-                            data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
-                        elif self.file_format == "nxs":
-                            stills_arg = path + "/*." + self.file_format
-                            data_tag = data_name[-1]
-                            self.create_job(stills_arg, data_tag)
+                    if os.path.isdir(path):
+                        if not data_name[-1]:
+                            print('make sure there is no "/" at the end of the file path')
+                            break
                         else:
-                            print("Unknown format, please check")
+                            if self.file_format == "cbf":
+                                stills_arg = path + "/*" + ".cbf"
+                                data_tag = data_name[-1]
+                                self.create_job(stills_arg, data_tag)
+                            elif self.file_format == "Select file format":
+                                print("Please select data format")
+                            elif self.file_format == "h5 palxfel":
+                                stills_arg = path + "/*." + "h5"
+                                data_tag = data_name[-1]
+                                self.create_job(stills_arg, data_tag)
+                            elif self.file_format == "h5 master":
+                                stills_arg = path + "/*master." + "h5"
+                                data_tag = data_name[-1]
+                                self.create_job(stills_arg, data_tag)
+                            elif self.file_format == "nxs":
+                                stills_arg = path + "/*." + self.file_format
+                                data_tag = data_name[-1]
+                                self.create_job(stills_arg, data_tag)
+                            else:
+                                print("Unknown format, please check")
+                    else:
+                        print(f"Data folder {path} not exists, please check")
             elif line == "":
                 pass
             else:

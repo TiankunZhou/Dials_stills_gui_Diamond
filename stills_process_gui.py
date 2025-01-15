@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from textwrap import dedent
 from processing_stills import colors, generate_and_process
-from plotting_status import count, dot, bar, pie, plot, uc_plot
+from plotting_status import count, dot, bar, plot, uc_plot
 from scaling_merging import scaling_job, merging_job
 from geo_refine import geometry_refinement
 from plot_merging_stats import plot_mergingstat
@@ -332,12 +332,20 @@ class plot_stills(tk.Frame):
     check_dir['yscrollcommand'] = scroll.set
   
     #Choose plot data one-by-one or stack
-    tk.Label(self, text="Plot option, recommend stack", font=("Arial", 15)).grid(row=3, column=2)
+    tk.Label(self, text="Plot option, recommend stack", font=("Arial", 15)).grid(row=3, column=1)
     option_list = ["single", "stack"]
     plot_name = tk.StringVar(self)
     plot_name.set("stack")
     plot_option = tk.OptionMenu(self, plot_name, *option_list, command = lambda selected: plot.read_option(plot_name.get()))
-    plot_option.grid(row=4, column=2, pady=(0, 25))
+    plot_option.grid(row=4, column=1, pady=(0, 25))
+
+    #whether real-time plot
+    tk.Label(self, text="Real-time plot, ONLY for BAR, ONE JOB per GUI, recommend for small dataset", font=("Arial", 12)).grid(row=3, column=3)
+    realtime_plot_option_list = ["yes", "no"]
+    realtime_plot = tk.StringVar(self)
+    realtime_plot.set("no")
+    realtime_plot_option = tk.OptionMenu(self, realtime_plot, *realtime_plot_option_list, command = lambda selected: plot.read_realtime(realtime_plot.get()))
+    realtime_plot_option.grid(row=4, column=3, pady=(0, 25))
 
     #give weight to extra columns, to make the widgets at the center
     self.grid_columnconfigure([0, 4], weight=1)
@@ -345,9 +353,9 @@ class plot_stills(tk.Frame):
 
     #plot options and buttons
     tk.Button(self, text="Plot dot", width =16, height=2,font=("Arial", 12), \
-              command = lambda: plot.dot(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=5, column=1, pady=(0, 5)) #convert text to a list
+              command = lambda: plot.dot(plot_name.get(), check_dir.get("1.0","end").splitlines(), realtime_plot.get())).grid(row=5, column=1, pady=(0, 5)) #convert text to a list
     tk.Button(self, text="Plot bar", width =16, height=2,font=("Arial", 12), \
-              command = lambda: plot.bar(plot_name.get(), check_dir.get("1.0","end").splitlines())).grid(row=5, column=2, pady=(0, 5))
+              command = lambda: plot.bar(plot_name.get(), check_dir.get("1.0","end").splitlines(), realtime_plot.get())).grid(row=5, column=2, pady=(0, 5))
     tk.Button(self, text="uc plot", width =16, height =2,font=("Arial", 12), \
               command = lambda: uc_plot(check_dir.get("1.0","end").splitlines(), plot_name.get()).plot_uc()).grid(row=5, column=3, pady=(0, 5))
     #tk.Button(self, text="Plot pie", width =12, height=4,font=("Arial", 12), \
