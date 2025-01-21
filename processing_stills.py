@@ -50,6 +50,7 @@ class generate_and_process:
         condor_script = processing_folder + "/" + str("condor_" + process_name + ".sh") #this is only for condor at PAL-XFEL
         phil = processing_folder + "/" + "input.phil"
         phil_condor = processing_folder + "/" + "${1}" #only for condor jobs
+        stdout_dir = processing_folder + "/stdout"
         print(colors.GREEN + colors.BOLD + "Submit jobs for: " + process_name + colors.ENDC)
         print(colors.GREEN + colors.BOLD + "Generate phil file: " + process_name + colors.ENDC)
         if os.path.isdir(processing_folder) and os.path.isfile(submit_script):
@@ -70,14 +71,23 @@ class generate_and_process:
                     p.write(f"integration.lookup.mask={self.mask} \n\n\n")
                 p.write(f"spotfinder.filter.min_spot_size={self.min_spot_size} \nspotfinder.filter.max_spot_size={self.max_spot_size} \n")
                 p.write(f"spotfinder.filter.d_min={self.resolution} \n\n\n")
-                if self.cluster_option == "slurm Diamond":
-                    p.write(f"mp.nproc={self.cpu_diamond_processing} \nmp.method=multiprocessing \n\n\n")
+                #if self.cluster_option == "slurm Diamond":
+                #    p.write(f"mp.nproc={self.cpu_diamond_processing} \nmp.method=multiprocessing \n\n\n")
                 p.write(f"indexing.known_symmetry.space_group={self.space_group} \nindexing.known_symmetry.unit_cell={self.unit_cell} \n\n\n")
                 p.write(self.phil_file_extra)
                 if self.composite == "no":
                     p.write(f"output.composite_output=False \n")
                 if self.ouput_all == "yes":
                     p.write(f"output.experiments_filename=%s_imported.expt \noutput.strong_filename=%s_strong.refl \n\n\n")
+                #add output logging file dir except for condor (PAL-XFEL)
+                if self.cluster_option == "condor":
+                    pass
+                else:
+                    p.write(f"\n\n\noutput.logging_dir=stdout")
+            #make stdout dir
+            if not os.path.isdir(stdout_dir):
+                os.makedirs(stdout_dir)
+            #set up cluster files
             if self.cluster_option == "slurm Diamond":
                 with open(submit_script, "a") as f:
                     f.write(dedent("""\
@@ -87,11 +97,11 @@ class generate_and_process:
                     f.write("#SBATCH --ntasks=" + self.cpu_diamond_processing + "\n")
                     f.write("#SBATCH --chdir " + processing_folder + "\n")
                     f.write("#SBATCH --job-name " + process_name + "\n" + "\n" + "\n")
-                    f.write("module load dials/latest\n")
+                    f.write("source " + self.dials_path + "\n")
                     if self.file_format == "cbf":
-                        f.write("dials.stills_process input.glob=" + data_files + " " + phil + "\n")
+                        f.write("mpirun dials.stills_process input.glob=" + data_files + " " + phil + " mp.method=mpi \n")
                     else:
-                        f.write("dials.stills_process " + data_files + " " + phil + "\n")
+                        f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
                 print(data_files)
 
                 os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)

@@ -157,7 +157,7 @@ class config(tk.Frame):
     #dials source file location
     tk.Label(self, text="Dials source path (only for self-installed dials)", font=("Arial", 15)).grid(row=5, column=1, sticky="EW")
     dials_source_path = tk.Entry(self, width=60, font=("Aria", 15))
-    dials_source_path.insert(0, "/dls/science/users/tbf48622/dials_dev_update_test/dials")
+    dials_source_path.insert(0, "/dls/science/users/tbf48622/dials_jan_2025/dials")
     dials_source_path.grid(row=6, column=1, pady=(0, 10), sticky="EW")
 
     #select number of cpus required for Diamond slurm - processing
