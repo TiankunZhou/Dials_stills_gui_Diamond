@@ -118,7 +118,7 @@ def check_inputs(args:argparse.ArgumentParser):
         print(f"please give input files")
         exit()
 
-    if args.data_formatnot in ["cbf","h5", "csv"]:
+    if args.data_format not in ["cbf","h5", "csv"]:
         print(f"input format not recognised {args.data_format}, please give cbf, h5 or csv, exiting")
         exit()
 
