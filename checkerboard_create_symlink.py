@@ -186,7 +186,7 @@ def create_symlink_specific(args):
                         else:
                             print(f"empty folder {folder_path_hits_dir} and {folder_path_non_hit_dir} exist, prepare create symbolic links")          
                             #get the image number 
-                            input_file = f"{input_dir_abs}/*_integrated.expt" 
+                            input_file = f"{input_dir_abs}/*_integrated.*" 
                             #check input file exist
                             if glob.glob(input_file):
                                 for integrate_file in glob.glob(input_file):
