@@ -61,10 +61,10 @@ def process_args():
         )
     
     #give the number of skipped images, such as 3 for on, off, off, off
-    input_args.add_argument("-off", "--off_image_number",
+    input_args.add_argument("-off", "--off_pulse_id",
         type = int,
-        help = "give number of off state images between on state, such as 3 (default) for on, off, off, off, on",
-        default = 3
+        help = "give number of off pulse id between desired image number, such as 32 (default) for on, off, off, off, on, with the puls id of 8, 16, 24, 32, 40...",
+        default = 32
         )
     #save args
     args = input_args.parse_args()
@@ -96,15 +96,12 @@ def extract_IDs(cxi_file:str):
 
 #get the desired image number, based on the pulse ID
 #output lists with image number as int
-def select_image_number(IDs:list, first_puls_id:int, off_gap:int):
+def select_image_number(IDs:list, first_puls_id:int, off_puls_id:int):
     image_num_desired = []
 
     for i in IDs:
-        selected_number = int(i[1])/first_puls_id
-        if selected_number == 1:
-            print(f"image number {colors.GREEN}{i[0]}{colors.ENDC} is selected with the pulse id of {colors.GREEN}{i[1]}{colors.ENDC} and train id of {colors.GREEN}{i[2]}{colors.ENDC}")
-            image_num_desired.append(i)
-        elif (selected_number - 1)%(off_gap + 1) == 0:
+        selected_number = (int(i[1]) - first_puls_id)%off_puls_id
+        if selected_number == 0:
             print(f"image number {colors.GREEN}{i[0]}{colors.ENDC} is selected with the pulse id of {colors.GREEN}{i[1]}{colors.ENDC} and train id of {colors.GREEN}{i[2]}{colors.ENDC}")
             image_num_desired.append(i)
         else:
@@ -191,8 +188,8 @@ def generate_csv(args):
                                 print(f"{colors.RED}csv file {all_ids_dir}/{all_IDs_file_name} exists, please check{colors.ENDC}")
 
                             #select IDs
-                            print(f"select IDs based on first pulse ID {colors.BLUE}{args.first_pulse_id}{colors.ENDC} and off image number of {colors.BLUE}{args.off_image_number}{colors.ENDC}")
-                            selected_IDs = select_image_number(all_ID_list, args.first_pulse_id, args.off_image_number)
+                            print(f"select IDs based on first pulse ID {colors.BLUE}{args.first_pulse_id}{colors.ENDC} and pulse ID offset of {colors.BLUE}{args.off_pulse_id}{colors.ENDC}")
+                            selected_IDs = select_image_number(all_ID_list, args.first_pulse_id, args.off_pulse_id)
                             selected_IDs_file_name = f"{all_IDs_name_prefix}_selected.csv"
                             if not os.path.isfile(f"{selected_image_num_dir}/{selected_IDs_file_name}"):
                                 print(f"saving selected IDs of {colors.BLUE}{file_path}{colors.ENDC} to csv")
@@ -211,7 +208,7 @@ def generate_csv(args):
                         print(f"prepare IDs for {file_path}")
                         all_ID_list = read_csv_file(file_path)
                         if args.save_csv_file == True:
-                            selected_IDs = select_image_number(all_ID_list, args.first_pulse_id, args.off_image_number)
+                            selected_IDs = select_image_number(all_ID_list, args.first_pulse_id, args.off_pulse_id)
                             all_IDs_name_prefix = get_file_name(file_path, "_all_IDs")
                             selected_IDs_file_name = f"{all_IDs_name_prefix}_selected.csv"
                             if not os.path.isfile(f"{selected_image_num_dir}/{selected_IDs_file_name}"):
