@@ -104,7 +104,6 @@ class generate_and_process:
                         f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
                 print(data_files)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -125,7 +124,6 @@ class generate_and_process:
                     f.write("mpirun dials.stills_process " + data_files + " " + phil + " mp.method=mpi \n")
                 print(data_files)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -143,7 +141,6 @@ class generate_and_process:
                     f.write("dials.stills_process " + data_files + " " + phil + "\n")
                 print(data_files)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -165,7 +162,6 @@ class generate_and_process:
                     f2.write("output = " + process_name + ".out" + "\n")
                     f2.write("queue" + "\n")
                 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "condor_submit " + "-batch-name " + process_name + " " + condor_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True

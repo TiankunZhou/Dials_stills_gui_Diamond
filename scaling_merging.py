@@ -59,7 +59,6 @@ class scaling_job:
                     f.write("mpirun -n " + self.cpu_diamond_scaling + " cctbx.xfel.merge "+ phil + " mp.method=mpi\n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -81,7 +80,6 @@ class scaling_job:
                     f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running:", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -100,7 +98,6 @@ class scaling_job:
                     f.write("mpirun -n 20 cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running:", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -122,7 +119,6 @@ class scaling_job:
                     f2.write("output = " + process_name + ".out" + "\n")
                     f2.write("queue" + "\n")
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "condor_submit " + "-batch-name " + process_name + " " + condor_script 
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -202,7 +198,6 @@ class merging_job:
                     f.write("mpirun -n " + self.cpu_diamond_merging + " cctbx.xfel.merge " + phil + " mp.method=mpi\n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
@@ -226,7 +221,6 @@ class merging_job:
                     f.write("mpirun cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running:", command)
                 #command_merginglist = "ls -d " + data_folder + " > " + processing_folder + "/" + process_name + "_" + run_name +"_file_list.log"
@@ -247,7 +241,6 @@ class merging_job:
                     f.write("mpirun -n 20 cctbx.xfel.merge " + phil + " mp.method=mpi \n")
                 print(phil)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running:", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -269,7 +262,6 @@ class merging_job:
                     f2.write("output = " + process_name + ".out" + "\n")
                     f2.write("queue" + "\n")
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "condor_submit " + "-batch-name " + process_name + " " + condor_script 
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True

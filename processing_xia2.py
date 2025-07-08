@@ -46,7 +46,6 @@ class run_xia2:
                     f.write(self.submit_file)
                 print(data_files)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
@@ -67,7 +66,6 @@ class run_xia2:
                     f.write(self.submit_file)
                 print(data_files)
 
-                os.chmod(submit_script, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
                 command = "sbatch " + submit_script
                 print("Running: ", command)
                 #shall=True can be dangerous, make sure no bad command in it. "module" can not be called with out shell=True
